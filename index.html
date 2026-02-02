@@ -1,0 +1,3942 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIMPD KPU - Monitoring</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;600;800&display=swap"
+        rel="stylesheet">
+    <!-- jQuery & Select2 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <style>
+        :root {
+            /* Login Theme (Dark) */
+            --bg-gradient: radial-gradient(circle at 50% -20%, #1a2a3a 0%, #06090c 100%);
+            --accent-cyan: #00d2ff;
+            --accent-teal: #00e5ff;
+            --text-primary: #ffffff;
+            --text-muted: #8da2b5;
+            --dark-bg: #0d161e;
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.15);
+
+            /* Dashboard Theme (Light) */
+            --dash-bg: #f4f6f8;
+            --dash-card: #ffffff;
+            --dash-text: #1a2a3a;
+            --dash-text-muted: #7a8a9a;
+            --dash-accent: #2ebcb3;
+            --dash-accent-light: #e6f7f6;
+            --dash-warning: #f5a623;
+            --dash-warning-light: #fef6e9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #06090c;
+            background-image: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        body.dashboard-mode {
+            background: var(--dash-bg);
+            color: var(--dash-text);
+            align-items: flex-start;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ======================== */
+        /* LOGIN SCREEN STYLES */
+        /* ======================== */
+        .container {
+            width: 100%;
+            max-width: 440px;
+            padding: 2.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .logo-container {
+            margin-bottom: 3rem;
+        }
+
+        .kpu-logo {
+            width: 120px;
+            height: 120px;
+            background: #000;
+            padding: 15px;
+            margin: 0 auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .kpu-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .hero-section {
+            margin-bottom: 6rem;
+        }
+
+        .app-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.8rem;
+            font-weight: 800;
+            font-style: italic;
+            letter-spacing: 0.15em;
+            margin-bottom: 0.4rem;
+            line-height: 1;
+        }
+
+        .title-underline {
+            width: 60px;
+            height: 5px;
+            background: var(--accent-cyan);
+            margin: 0 auto 1.5rem;
+            border-radius: 2px;
+        }
+
+        .subtitle {
+            color: var(--accent-cyan);
+            letter-spacing: 0.25em;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .login-box {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .instruction {
+            color: #8da2b5;
+            font-size: 1rem;
+            margin-bottom: 1.8rem;
+            font-weight: 500;
+        }
+
+        .input-group {
+            position: relative;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 2.5rem;
+        }
+
+        .input-label {
+            position: absolute;
+            top: -9px;
+            left: 20px;
+            background: #0d1218;
+            padding: 0 8px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            z-index: 2;
+            letter-spacing: 0.1em;
+            border-radius: 2px;
+        }
+
+        .custom-select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .custom-select {
+            width: 100%;
+            background: rgba(13, 18, 24, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 1.5rem 1.5rem;
+            color: #fff;
+            font-size: 1.1rem;
+            appearance: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .custom-select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.1);
+        }
+
+        .select-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-cyan);
+            pointer-events: none;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(90deg, #00d2ff 0%, #00e5ff 100%);
+            border: none;
+            border-radius: 22px;
+            padding: 1.4rem;
+            color: #000;
+            font-weight: 800;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 6rem;
+            box-shadow: 0 10px 40px rgba(0, 210, 255, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary .icon {
+            width: 30px;
+            height: 30px;
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 0.9rem 2.8rem;
+            color: #4b5a6c;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            width: max-content;
+        }
+
+        .footer {
+            margin-top: 5rem;
+        }
+
+        .security-tag {
+            color: #4b5a6c;
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            font-weight: 800;
+            margin-bottom: 0.4rem;
+        }
+
+        .dept-tag {
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* ======================== */
+        /* DASHBOARD SCREEN STYLES */
+        /* ======================== */
+        #main-dashboard.active {
+            justify-content: flex-start;
+            align-items: stretch;
+            padding-bottom: 80px;
+            /* Space for bottom nav */
+        }
+
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 1.5rem;
+            background: var(--dash-card);
+            border-bottom: 1px solid #eaeef2;
+        }
+
+        .dash-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dash-header-logo {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .dash-header-logo img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+        }
+
+        .dash-header-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--dash-text);
+        }
+
+        .dash-header-right button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--dash-text);
+            font-size: 1.5rem;
+        }
+
+        .dash-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        /* Profile Card */
+        .profile-card {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-avatar {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--dash-accent);
+        }
+
+        .profile-avatar-initials {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--dash-accent), #1d8a83);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border: 3px solid var(--dash-accent);
+            flex-shrink: 0;
+        }
+
+        .btn-logout {
+            background: #e74c3c;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: background 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: #c0392b;
+        }
+
+        /* Select2 Custom Styles */
+        .select2-container--default .select2-selection--single {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            height: 52px;
+            padding: 10px 15px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #fff;
+            line-height: 30px;
+            font-size: 1rem;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 50px;
+            right: 10px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #fff transparent transparent transparent;
+        }
+
+        .select2-dropdown {
+            background: #1a2a3a;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+        }
+
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            padding: 10px;
+        }
+
+        .select2-container--default .select2-results__option {
+            padding: 10px 15px;
+            color: #fff;
+        }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background: var(--dash-accent);
+        }
+
+        .select2-container--default .select2-results__option[aria-selected=true] {
+            background: rgba(46, 188, 179, 0.3);
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        /* Fix Select2 dropdown position - contained within login-box */
+        .input-group {
+            position: relative;
+        }
+
+        .select2-container--open .select2-dropdown {
+            margin-top: 5px;
+            border-radius: 12px;
+        }
+
+        .select2-container--default.select2-container--open .select2-selection--single {
+            border-color: rgba(0, 210, 255, 0.5);
+        }
+
+        .profile-info h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dash-text);
+            margin-bottom: 2px;
+        }
+
+        .profile-info .org-name {
+            color: var(--dash-accent);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .profile-info .nip {
+            color: var(--dash-text-muted);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nip-icon {
+            color: var(--dash-accent);
+        }
+
+        /* Sync Card */
+        .sync-card {
+            background: var(--dash-card);
+            border-radius: 16px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .sync-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--dash-text);
+            margin-bottom: 4px;
+        }
+
+        .sync-card p {
+            font-size: 0.85rem;
+            color: var(--dash-text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .btn-refresh {
+            width: 100%;
+            background: var(--dash-accent);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0.9rem;
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-refresh:hover {
+            background: #28a8a0;
+        }
+
+        /* Status Section */
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--dash-text);
+            margin-bottom: 1rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-card {
+            background: var(--dash-card);
+            border-radius: 16px;
+            padding: 1.2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .status-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-card-label {
+            font-size: 0.9rem;
+            color: var(--dash-text-muted);
+        }
+
+        .status-card-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-card-icon.success {
+            background: #d4f5e9;
+            color: #2ecc71;
+        }
+
+        .status-card-icon.warning {
+            background: #fef6e9;
+            color: #f5a623;
+        }
+
+        .status-card-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--dash-text);
+            margin-bottom: 2px;
+        }
+
+        .status-card-sub {
+            font-size: 0.75rem;
+            color: var(--dash-accent);
+        }
+
+        .status-card-sub.muted {
+            color: var(--dash-text-muted);
+        }
+
+        /* Reports List */
+        .reports-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .report-item {
+            background: var(--dash-card);
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .report-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .report-icon.teal {
+            background: var(--dash-accent-light);
+            color: var(--dash-accent);
+        }
+
+        .report-icon.blue {
+            background: #e8f4fd;
+            color: #3498db;
+        }
+
+        .report-details {
+            flex: 1;
+        }
+
+        .report-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--dash-text);
+            margin-bottom: 2px;
+        }
+
+        .report-date {
+            font-size: 0.8rem;
+            color: var(--dash-text-muted);
+        }
+
+        .report-status {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+
+        .report-status.complete {
+            background: #d4f5e9;
+            color: #2ecc71;
+        }
+
+        .report-status.incomplete {
+            background: #fef6e9;
+            color: #e67e22;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--dash-card);
+            display: flex;
+            justify-content: space-around;
+            padding: 0.8rem 0;
+            border-top: 1px solid #eaeef2;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--dash-text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+            transition: color 0.2s;
+            padding: 0.5rem 1rem;
+        }
+
+        .nav-item.active {
+            color: var(--dash-accent);
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* ======================== */
+        /* DARK MODE FOR DASHBOARD */
+        /* ======================== */
+        body.dashboard-mode.dark-mode {
+            background: #0d1117;
+            color: #e6edf3;
+        }
+
+        body.dark-mode .dash-header {
+            background: #161b22;
+            border-bottom-color: #30363d;
+        }
+
+        body.dark-mode .dash-header-title {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .dash-header-logo {
+            background: #1a3a3a;
+            color: #2ebcb3;
+        }
+
+        body.dark-mode .dash-content {
+            background: #0d1117;
+        }
+
+        body.dark-mode .profile-info h2 {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .profile-info .nip {
+            color: #8b949e;
+        }
+
+        body.dark-mode .sync-card,
+        body.dark-mode .status-card,
+        body.dark-mode .report-item {
+            background: #161b22;
+            border: 1px solid #30363d;
+        }
+
+        body.dark-mode .sync-card h3,
+        body.dark-mode .section-title {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .sync-card p,
+        body.dark-mode .status-card-label,
+        body.dark-mode .report-date {
+            color: #8b949e;
+        }
+
+        body.dark-mode .status-card-value {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .report-title {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .bottom-nav {
+            background: #161b22;
+            border-top-color: #30363d;
+        }
+
+        body.dark-mode .nav-item {
+            color: #8b949e;
+        }
+
+        body.dark-mode .nav-item.active {
+            color: #2ebcb3;
+        }
+
+        body.dark-mode #btn-dark-mode,
+        body.dark-mode #btn-dark-mode-form {
+            color: #e6edf3;
+        }
+
+        /* ======================== */
+        /* FORM STYLES */
+        /* ======================== */
+        .back-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--dash-text);
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #eaeef2;
+            padding: 0 1rem;
+        }
+
+        .form-tab {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--dash-text-muted);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .form-tab.active {
+            color: var(--dash-accent);
+            border-bottom-color: var(--dash-accent);
+        }
+
+        .form-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            padding-bottom: 5rem;
+            background: var(--dash-bg);
+        }
+
+        .form-tab-content {
+            display: none;
+        }
+
+        .form-tab-content.active {
+            display: block;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--dash-text);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eaeef2;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .flex-1 {
+            flex: 1;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--dash-text-muted);
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: #fafafa;
+            color: var(--dash-text);
+            transition: border-color 0.3s, box-shadow 0.3s;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--dash-accent);
+            box-shadow: 0 0 0 3px rgba(46, 188, 179, 0.1);
+            background: white;
+        }
+
+        .form-input::placeholder {
+            color: #999;
+        }
+
+        .form-input[readonly] {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            cursor: pointer;
+        }
+
+        /* File Upload Styles */
+        .file-upload {
+            position: relative;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-label {
+            display: flex;
+            align-items: center;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .file-choose {
+            background: var(--dash-accent);
+            color: white;
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .file-name {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            color: #999;
+            background: #fafafa;
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, var(--dash-accent), #1d8a83);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(46, 188, 179, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        /* Dark Mode Form Styles */
+        body.dark-mode .form-tabs {
+            background: #161b22;
+            border-bottom-color: #30363d;
+        }
+
+        body.dark-mode .form-tab {
+            color: #8b949e;
+        }
+
+        body.dark-mode .form-tab.active {
+            color: #2ebcb3;
+        }
+
+        body.dark-mode .form-content {
+            background: #0d1117;
+        }
+
+        body.dark-mode .form-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+        }
+
+        body.dark-mode .form-section-title {
+            color: #e6edf3;
+            border-bottom-color: #30363d;
+        }
+
+        body.dark-mode .form-input {
+            background: #0d1117;
+            border-color: #30363d;
+            color: #e6edf3;
+        }
+
+        body.dark-mode .form-input:focus {
+            background: #161b22;
+        }
+
+        body.dark-mode .form-input[readonly] {
+            background: #21262d;
+            color: #8b949e;
+        }
+
+        body.dark-mode .file-label {
+            border-color: #30363d;
+        }
+
+        body.dark-mode .file-name {
+            background: #0d1117;
+            color: #8b949e;
+        }
+
+        body.dark-mode .back-btn {
+            color: #e6edf3;
+        }
+
+        /* Navigation Button Styles */
+        .btn-nav-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-next,
+        .btn-prev {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, var(--dash-accent), #1d8a83);
+            color: white;
+        }
+
+        .btn-next:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(46, 188, 179, 0.4);
+        }
+
+        .btn-prev {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-prev:hover {
+            background: #d0d0d0;
+            transform: translateY(-2px);
+        }
+
+        body.dark-mode .btn-prev {
+            background: #30363d;
+            color: #e6edf3;
+        }
+
+        body.dark-mode .btn-prev:hover {
+            background: #484f58;
+        }
+
+        /* Dark Mode - Monitoring Page */
+        body.dark-mode #monitoring-screen {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1a2a3a 50%, #0a1a25 100%);
+        }
+
+        body.dark-mode .monitoring-header {
+            background: rgba(10, 26, 37, 0.95);
+        }
+
+        body.dark-mode .monitoring-title {
+            color: #00d2ff;
+        }
+
+        body.dark-mode .monitoring-subtitle {
+            color: #8da2b5;
+        }
+
+        body.dark-mode .period-selector {
+            background: rgba(0, 210, 255, 0.08);
+            border-color: rgba(0, 210, 255, 0.2);
+        }
+
+        body.dark-mode .period-value {
+            color: #00d2ff;
+        }
+
+        body.dark-mode .period-label {
+            color: #8da2b5;
+        }
+
+        body.dark-mode .monitoring-table-container {
+            background: rgba(10, 26, 37, 0.8);
+            border-color: rgba(0, 210, 255, 0.15);
+        }
+
+        body.dark-mode .monitoring-table-header {
+            background: rgba(0, 210, 255, 0.1);
+        }
+
+        body.dark-mode .table-header-cell {
+            color: #00d2ff;
+        }
+
+        body.dark-mode .monitoring-table-row {
+            border-color: rgba(0, 210, 255, 0.1);
+        }
+
+        body.dark-mode .monitoring-table-row:hover {
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        body.dark-mode .cell-primary {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .cell-secondary,
+        body.dark-mode .cell-date {
+            color: #8da2b5;
+        }
+
+        body.dark-mode .cell-tujuan {
+            color: #00d2ff;
+        }
+
+        body.dark-mode .monitoring-bottom-nav {
+            background: #0a1a25;
+            border-color: rgba(0, 210, 255, 0.15);
+        }
+
+        body.dark-mode .monitoring-nav-item {
+            color: #8da2b5;
+        }
+
+        body.dark-mode .monitoring-nav-item.active {
+            color: #00d2ff;
+        }
+
+        body.dark-mode .floating-add-btn {
+            background: linear-gradient(135deg, #00d2ff, #0099cc);
+        }
+
+        body.dark-mode .data-section-header {
+            color: #8da2b5;
+        }
+
+        body.dark-mode .data-section-title {
+            color: #8da2b5;
+        }
+
+        body.dark-mode .data-count-badge {
+            background: rgba(0, 210, 255, 0.15);
+            color: #00d2ff;
+        }
+
+        body.dark-mode .monitoring-back-btn,
+        body.dark-mode .monitoring-calendar-btn {
+            background: rgba(0, 210, 255, 0.1);
+            color: #00d2ff;
+        }
+
+        body.dark-mode .period-nav-btn {
+            background: rgba(0, 210, 255, 0.1);
+            color: #00d2ff;
+        }
+
+        body.dark-mode .add-label-text {
+            color: #00d2ff !important;
+        }
+
+        body.dark-mode .monitoring-loading {
+            color: #8da2b5;
+        }
+
+        body.dark-mode .monitoring-loading .spinner {
+            border-color: rgba(0, 210, 255, 0.1);
+            border-top-color: #00d2ff;
+        }
+
+        body.dark-mode .monitoring-empty {
+            color: #8da2b5;
+        }
+
+        /* ======================== */
+        /* MONITORING BULANAN PAGE */
+        /* ======================== */
+        #monitoring-screen {
+            background: #f0f4f8;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+            min-height: 100vh;
+        }
+
+        #monitoring-screen.active {
+            justify-content: flex-start;
+            align-items: stretch;
+        }
+
+        /* Monitoring Header */
+        .monitoring-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 1rem;
+            background: transparent;
+        }
+
+        .monitoring-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .monitoring-back-btn {
+            background: #ffffff;
+            border: 1px solid #e0e6ed;
+            border-radius: 8px;
+            padding: 0.6rem;
+            cursor: pointer;
+            color: #2ebcb3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .monitoring-back-btn:hover {
+            background: #f0f4f8;
+            border-color: #2ebcb3;
+        }
+
+        .monitoring-header-center {
+            flex: 1;
+            text-align: center;
+        }
+
+        .monitoring-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a2a3a;
+            letter-spacing: 0.1em;
+            margin-bottom: 2px;
+        }
+
+        .monitoring-subtitle {
+            font-size: 0.65rem;
+            color: #2ebcb3;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+        }
+
+        .monitoring-header-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .monitoring-calendar-btn {
+            background: #ffffff;
+            border: 1px solid #e0e6ed;
+            border-radius: 8px;
+            padding: 0.6rem;
+            cursor: pointer;
+            color: #2ebcb3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .monitoring-calendar-btn:hover {
+            background: #f0f4f8;
+            border-color: #2ebcb3;
+        }
+
+        /* Period Selector */
+        .period-selector {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 1rem 1rem;
+            padding: 1rem;
+            background: #ffffff;
+            border: 1px solid #e0e6ed;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .period-nav-btn {
+            background: #f0f4f8;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem;
+            cursor: pointer;
+            color: #2ebcb3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .period-nav-btn:hover {
+            transform: scale(1.1);
+            background: #2ebcb3;
+            color: #ffffff;
+        }
+
+        .period-display {
+            text-align: center;
+        }
+
+        .period-label {
+            font-size: 0.7rem;
+            color: #2ebcb3;
+            letter-spacing: 0.2em;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .period-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1a2a3a;
+        }
+
+        /* Data Section */
+        .monitoring-content {
+            padding: 1rem;
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 100px;
+        }
+
+        .data-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .data-section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #2ebcb3;
+        }
+
+        .data-section-title svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .data-count-badge {
+            background: #e8f5f4;
+            border: 1px solid #2ebcb3;
+            border-radius: 8px;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.75rem;
+            color: #2ebcb3;
+            font-weight: 600;
+        }
+
+        /* Data Table */
+        .monitoring-table-container {
+            background: #ffffff;
+            border: 1px solid #e0e6ed;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .monitoring-table-header {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 0;
+            padding: 0.8rem 1rem;
+            background: #f0f4f8;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        .table-header-cell {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #2ebcb3;
+            letter-spacing: 0.1em;
+        }
+
+        .monitoring-table-body {
+            max-height: calc(100vh - 350px);
+            overflow-y: auto;
+        }
+
+        .monitoring-table-row {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 0;
+            padding: 1rem;
+            border-bottom: 1px solid #e0e6ed;
+            transition: background 0.2s;
+        }
+
+        .monitoring-table-row:hover {
+            background: #f5f8fa;
+        }
+
+        .monitoring-table-row:last-child {
+            border-bottom: none;
+        }
+
+        .table-cell {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .cell-primary {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1a2a3a;
+            margin-bottom: 2px;
+        }
+
+        .cell-secondary {
+            font-size: 0.7rem;
+            color: #2ebcb3;
+        }
+
+        .cell-tujuan {
+            font-size: 0.85rem;
+            color: #5a6a7a;
+        }
+
+        .cell-date {
+            font-size: 0.85rem;
+            color: #5a6a7a;
+        }
+
+        /* Loading State */
+        .monitoring-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: #5a6a7a;
+        }
+
+        .monitoring-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e0e6ed;
+            border-top-color: #2ebcb3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Empty State */
+        .monitoring-empty {
+            text-align: center;
+            padding: 3rem;
+            color: #5a6a7a;
+        }
+
+        .monitoring-empty svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Monitoring Bottom Nav - Light Theme */
+        .monitoring-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-top: 1px solid #e0e6ed;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .monitoring-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #8a9aa8;
+            font-size: 0.65rem;
+            font-weight: 600;
+            transition: color 0.2s;
+            padding: 0.5rem 1rem;
+        }
+
+        .monitoring-nav-item.active {
+            color: #2ebcb3;
+        }
+
+        .monitoring-nav-item svg {
+            width: 22px;
+            height: 22px;
+        }
+
+
+
+        /* Quick Action Buttons */
+        .quick-actions {
+            display: flex;
+            gap: 0.8rem;
+            margin: 0 1rem 1rem 1rem;
+        }
+
+        .quick-action-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0.8rem 1rem;
+            background: #ffffff;
+            border: 1px solid #e0e6ed;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1a2a3a;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            text-decoration: none;
+        }
+
+        .quick-action-btn:hover {
+            background: #f0f4f8;
+            border-color: #2ebcb3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-action-btn svg {
+            width: 18px;
+            height: 18px;
+            color: #2ebcb3;
+        }
+
+        .quick-action-btn.sheet-btn {
+            border-left: 3px solid #34a853;
+        }
+
+        .quick-action-btn.sheet-btn svg {
+            color: #34a853;
+        }
+
+        .quick-action-btn.drive-btn {
+            border-left: 3px solid #4285f4;
+        }
+
+        .quick-action-btn.drive-btn svg {
+            color: #4285f4;
+        }
+
+        /* Dark mode for quick actions */
+        body.dark-mode .quick-action-btn {
+            background: rgba(0, 210, 255, 0.08);
+            border-color: rgba(0, 210, 255, 0.2);
+            color: #e6edf3;
+        }
+
+        body.dark-mode .quick-action-btn:hover {
+            background: rgba(0, 210, 255, 0.15);
+            border-color: rgba(0, 210, 255, 0.4);
+        }
+
+        body.dark-mode .quick-action-btn.sheet-btn {
+            border-left-color: #34a853;
+        }
+
+        body.dark-mode .quick-action-btn.drive-btn {
+            border-left-color: #4285f4;
+        }
+
+        /* ======================== */
+        /* CALENDAR VIEW STYLES */
+        /* ======================== */
+        #calendar-screen {
+            background: #f0f4f8;
+            min-height: 100vh;
+            display: none;
+        }
+
+        #calendar-screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #ffffff;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        .calendar-header-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a2a3a;
+        }
+
+        .calendar-back-btn {
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            color: #2ebcb3;
+            display: flex;
+            align-items: center;
+        }
+
+        .calendar-content {
+            padding: 1rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .calendar-period-selector {
+            background: #ffffff;
+            border: 1px solid #e0e6ed;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .calendar-period-label {
+            font-size: 0.75rem;
+            color: #5a6a7a;
+            margin-bottom: 4px;
+        }
+
+        .calendar-period-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a2a3a;
+        }
+
+        .calendar-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1a2a3a;
+            margin-bottom: 0.3rem;
+        }
+
+        .calendar-section-subtitle {
+            font-size: 0.8rem;
+            color: #5a6a7a;
+            margin-bottom: 1rem;
+        }
+
+        /* Calendar Grid Container */
+        .calendar-grid-container {
+            background: #ffffff;
+            border: 1px solid #e0e6ed;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-grid-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .calendar-grid {
+            display: table;
+            width: 100%;
+            min-width: 700px;
+            border-collapse: collapse;
+        }
+
+        .calendar-grid-header {
+            display: table-row;
+            background: #f0f4f8;
+        }
+
+        .calendar-grid-row {
+            display: table-row;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        .calendar-grid-row:last-child {
+            border-bottom: none;
+        }
+
+        .calendar-grid-cell {
+            display: table-cell;
+            padding: 0.5rem 0.3rem;
+            text-align: center;
+            font-size: 0.65rem;
+            vertical-align: middle;
+            border-right: 1px solid #e0e6ed;
+        }
+
+        .calendar-grid-cell:last-child {
+            border-right: none;
+        }
+
+        .calendar-grid-cell.header {
+            font-weight: 700;
+            color: #2ebcb3;
+            padding: 0.6rem 0.3rem;
+        }
+
+        .calendar-grid-cell.name-cell {
+            text-align: left;
+            padding-left: 0.8rem;
+            font-weight: 600;
+            color: #1a2a3a;
+            min-width: 120px;
+            max-width: 120px;
+            font-size: 0.7rem;
+            background: #fafbfc;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+        }
+
+        .calendar-grid-cell.header.name-cell {
+            background: #f0f4f8;
+        }
+
+        .calendar-grid-cell.weekend {
+            background: #e8f0f8;
+        }
+
+        .calendar-grid-cell.has-trip {
+            color: #2ebcb3;
+            font-weight: 700;
+        }
+
+        .trip-marker {
+            color: #2ebcb3;
+            font-weight: 700;
+            font-size: 0.6rem;
+        }
+
+        /* Calendar Legend */
+        .calendar-legend {
+            background: #ffffff;
+            border: 1px solid #e0e6ed;
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .calendar-legend-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #5a6a7a;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.8rem;
+        }
+
+        .calendar-legend-items {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .calendar-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #1a2a3a;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            background: #e8f0f8;
+        }
+
+        .legend-text {
+            color: #2ebcb3;
+            font-weight: 700;
+        }
+
+        /* Dark mode for calendar */
+        body.dark-mode #calendar-screen {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1a2a3a 50%, #0a1a25 100%);
+        }
+
+        body.dark-mode .calendar-header {
+            background: rgba(10, 26, 37, 0.95);
+            border-color: rgba(0, 210, 255, 0.15);
+        }
+
+        body.dark-mode .calendar-header-title {
+            color: #00d2ff;
+        }
+
+        body.dark-mode .calendar-back-btn {
+            color: #00d2ff;
+        }
+
+        body.dark-mode .calendar-period-selector,
+        body.dark-mode .calendar-grid-container,
+        body.dark-mode .calendar-legend {
+            background: rgba(10, 26, 37, 0.8);
+            border-color: rgba(0, 210, 255, 0.15);
+        }
+
+        body.dark-mode .calendar-period-value,
+        body.dark-mode .calendar-section-title {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .calendar-period-label,
+        body.dark-mode .calendar-section-subtitle,
+        body.dark-mode .calendar-legend-title {
+            color: #8da2b5;
+        }
+
+        body.dark-mode .calendar-grid-header,
+        body.dark-mode .calendar-grid-cell.header.name-cell {
+            background: rgba(0, 210, 255, 0.1);
+        }
+
+        body.dark-mode .calendar-grid-cell.name-cell {
+            background: rgba(10, 26, 37, 0.95);
+            color: #e6edf3;
+        }
+
+        body.dark-mode .calendar-grid-cell {
+            border-color: rgba(0, 210, 255, 0.1);
+        }
+
+        body.dark-mode .calendar-grid-row {
+            border-color: rgba(0, 210, 255, 0.1);
+        }
+
+        body.dark-mode .calendar-grid-cell.weekend {
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        body.dark-mode .calendar-grid-cell.has-trip,
+        body.dark-mode .trip-marker,
+        body.dark-mode .legend-text {
+            color: #00d2ff;
+        }
+
+        body.dark-mode .calendar-legend-item {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .legend-box {
+            background: rgba(0, 210, 255, 0.1);
+        }
+
+        /* Month Picker Modal */
+        .month-picker-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .month-picker-overlay.active {
+            display: flex;
+        }
+
+        .month-picker-modal {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 320px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .month-picker-header {
+            padding: 1rem;
+            background: #2ebcb3;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .month-picker-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .month-picker-year-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        .year-nav-btn {
+            background: #f0f4f8;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #2ebcb3;
+            transition: all 0.2s;
+        }
+
+        .year-nav-btn:hover {
+            background: #2ebcb3;
+            color: #ffffff;
+        }
+
+        .year-display {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1a2a3a;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .month-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+
+        .month-picker-item {
+            padding: 0.8rem;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1a2a3a;
+            background: #f0f4f8;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .month-picker-item:hover {
+            background: #e0f0ef;
+            border-color: #2ebcb3;
+        }
+
+        .month-picker-item.selected {
+            background: #2ebcb3;
+            color: #ffffff;
+            border-color: #2ebcb3;
+        }
+
+        .month-picker-footer {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-top: 1px solid #e0e6ed;
+        }
+
+        .month-picker-btn {
+            flex: 1;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .month-picker-btn.cancel {
+            background: #f0f4f8;
+            border: 1px solid #e0e6ed;
+            color: #5a6a7a;
+        }
+
+        .month-picker-btn.confirm {
+            background: #2ebcb3;
+            border: none;
+            color: #ffffff;
+        }
+
+        .month-picker-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Dark mode for month picker */
+        body.dark-mode .month-picker-modal {
+            background: #1a2a3a;
+        }
+
+        body.dark-mode .month-picker-header {
+            background: #00d2ff;
+            color: #0a1a25;
+        }
+
+        body.dark-mode .month-picker-year-selector {
+            border-color: rgba(0, 210, 255, 0.2);
+        }
+
+        body.dark-mode .year-nav-btn {
+            background: rgba(0, 210, 255, 0.1);
+            color: #00d2ff;
+        }
+
+        body.dark-mode .year-nav-btn:hover {
+            background: #00d2ff;
+            color: #0a1a25;
+        }
+
+        body.dark-mode .year-display {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .month-picker-item {
+            background: rgba(0, 210, 255, 0.1);
+            color: #e6edf3;
+        }
+
+        body.dark-mode .month-picker-item:hover {
+            background: rgba(0, 210, 255, 0.2);
+            border-color: #00d2ff;
+        }
+
+        body.dark-mode .month-picker-item.selected {
+            background: #00d2ff;
+            color: #0a1a25;
+        }
+
+        body.dark-mode .month-picker-footer {
+            border-color: rgba(0, 210, 255, 0.2);
+        }
+
+        body.dark-mode .month-picker-btn.cancel {
+            background: rgba(0, 210, 255, 0.1);
+            border-color: rgba(0, 210, 255, 0.2);
+            color: #8da2b5;
+        }
+
+        body.dark-mode .month-picker-btn.confirm {
+            background: #00d2ff;
+            color: #0a1a25;
+        }
+
+        /* Mobile Optimization for Calendar */
+        @media (max-width: 640px) {
+            #calendar-screen.active {
+                align-items: stretch;
+                /* Mencegah konten terpotong */
+                justify-content: flex-start;
+                padding-bottom: 2rem;
+            }
+
+            .calendar-content {
+                width: 100%;
+                overflow-x: hidden;
+            }
+
+            .calendar-period-selector {
+                padding: 0.6rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .calendar-grid-container {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+
+            .calendar-grid-cell {
+                padding: 0.3rem 0.1rem;
+                font-size: 0.6rem;
+                min-width: 26px;
+            }
+
+            .calendar-grid-cell.name-cell {
+                min-width: 85px;
+                max-width: 85px;
+                font-size: 0.65rem;
+                padding-left: 0.3rem;
+                position: sticky;
+                left: 0;
+                z-index: 20;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                background: #fafbfc;
+                /* Required for sticky */
+            }
+
+            body.dark-mode .calendar-grid-cell.name-cell {
+                background: #1a2a3a;
+            }
+
+            .calendar-grid-header {
+                font-size: 0.75rem;
+            }
+
+            .calendar-legend {
+                padding: 0.8rem;
+                margin: 0 0.5rem;
+            }
+
+            .calendar-legend-items {
+                gap: 0.5rem;
+                justify-content: flex-start;
+            }
+
+            .calendar-legend-item {
+                font-size: 0.65rem;
+            }
+
+            .legend-box {
+                width: 14px;
+                height: 14px;
+            }
+
+            /* Fix sticky header z-index overlap */
+            .calendar-grid-cell.header.name-cell {
+                z-index: 22;
+                background: #f0f4f8;
+            }
+
+            body.dark-mode .calendar-grid-cell.header.name-cell {
+                background: #0f2435;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+        <div class="container">
+            <div class="logo-container">
+                <div class="kpu-logo">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/KPU_Logo.svg/1200px-KPU_Logo.svg.png"
+                        alt="KPU Logo">
+                </div>
+            </div>
+
+            <div class="hero-section">
+                <h1 class="app-title">SIMPD KPU</h1>
+                <div class="title-underline"></div>
+                <p class="subtitle">KONAWE UTARA MONITORING</p>
+            </div>
+
+            <div class="login-box">
+                <p class="instruction">Pilih profil untuk masuk otomatis</p>
+                <div class="input-group">
+                    <label class="input-label">NAMA PEGAWAI</label>
+                    <div class="custom-select-wrapper">
+                        <select id="employee-select" class="custom-select">
+                            <option value="" disabled selected>Memuat data...</option>
+                        </select>
+                        <div class="select-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 14L12 19L17 14M7 10L12 5L17 10" stroke="currentColor" stroke-width="2.5"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-login" class="btn-primary">
+                    MASUK
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M14 4H18C18.5304 4 19.0391 4.21071 19.4142 4.58579C19.7893 4.96086 20 5.46957 20 6V18C20 18.5304 19.7893 19.0391 19.4142 19.4142C19.0391 19.7893 18.5304 20 18 20H14"
+                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M10 8L14 12L10 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M14 12H3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </button>
+
+                <button id="btn-demo" class="btn-outline">GUNAKAN DATA DEMO</button>
+            </div>
+
+            <div class="footer">
+                <p class="security-tag">CYBER SECURITY ENABLED</p>
+                <p class="dept-tag">KPU IT INFRASTRUCTURE TEAM</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="main-dashboard" class="screen">
+        <!-- Header -->
+        <header class="dash-header">
+            <div class="dash-header-left">
+                <div class="dash-header-logo">
+                    <img src="kpu-logo.png" alt="KPU Logo">
+                </div>
+                <span class="dash-header-title">Beranda Pegawai</span>
+            </div>
+            <div class="dash-header-right">
+                <button id="btn-dark-mode" title="Toggle Dark Mode">🌙</button>
+                <button id="btn-logout" class="btn-logout" onclick="logout()" title="Logout">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="dash-content">
+            <!-- Profile Card -->
+            <div class="profile-card">
+                <div class="profile-avatar-initials" id="dash-user-avatar">AP</div>
+                <div class="profile-info">
+                    <h2 id="dash-user-name">Halo, Andi Perkasa</h2>
+                    <p class="org-name">KPU Kabupaten Konawe Utara</p>
+                    <p class="nip"><span class="nip-icon">📧</span> <span id="dash-user-nip">NIP:
+                            198501012010011001</span></p>
+                </div>
+            </div>
+
+            <!-- Sync Card -->
+            <div class="sync-card">
+                <h3>Sinkronisasi Data</h3>
+                <p>Terakhir diperbarui: <span id="last-sync">2 menit yang lalu</span></p>
+                <button class="btn-refresh" onclick="refreshData()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path d="M23 4v6h-6M1 20v-6h6" />
+                        <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+
+            <!-- Status Section -->
+            <h3 class="section-title">Status Laporan</h3>
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-card-header">
+                        <span class="status-card-label">Lengkap</span>
+                        <div class="status-card-icon success">✓</div>
+                    </div>
+                    <div class="status-card-value" id="count-lengkap">12</div>
+                    <div class="status-card-sub">+2 Minggu ini</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-card-header">
+                        <span class="status-card-label">Belum Lengkap</span>
+                        <div class="status-card-icon warning">●</div>
+                    </div>
+                    <div class="status-card-value" id="count-belum">3</div>
+                    <div class="status-card-sub muted">Segera lengkapi</div>
+                </div>
+            </div>
+
+            <!-- Reports List -->
+            <h3 class="section-title">Laporan Terbaru</h3>
+            <div class="reports-list" id="reports-list">
+                <div class="report-item">
+                    <div class="report-icon teal">✈</div>
+                    <div class="report-details">
+                        <div class="report-title">Kunjungan Kerja Jakarta</div>
+                        <div class="report-date">12 - 15 Okt 2023</div>
+                    </div>
+                    <span class="report-status complete">LENGKAP</span>
+                </div>
+                <div class="report-item">
+                    <div class="report-icon blue">🖥</div>
+                    <div class="report-details">
+                        <div class="report-title">Monitoring Dapil II</div>
+                        <div class="report-date">20 Okt 2023</div>
+                    </div>
+                    <span class="report-status incomplete">BELUM LENGKAP</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-tab="beranda" onclick="switchTab('beranda')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                Beranda
+            </button>
+            <button class="nav-item" data-tab="tambah" onclick="switchTab('tambah')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <line x1="12" y1="8" x2="12" y2="16" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+                Tambah Laporan
+            </button>
+            <button class="nav-item" data-tab="monitoring" onclick="switchTab('monitoring')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Monitoring
+            </button>
+        </nav>
+    </div>
+
+    <!-- Tambah Laporan Screen -->
+    <div id="tambah-laporan" class="screen">
+        <!-- Header -->
+        <header class="dash-header">
+            <div class="dash-header-left">
+                <button class="back-btn" onclick="switchTab('beranda')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <span class="dash-header-title">Tambah Laporan</span>
+            </div>
+        </header>
+
+        <!-- Form Tabs -->
+        <div class="form-tabs">
+            <button class="form-tab active" data-form-tab="detail" onclick="switchFormTab('detail')">DETAIL</button>
+            <button class="form-tab" data-form-tab="tujuan" onclick="switchFormTab('tujuan')">TUJUAN</button>
+            <button class="form-tab" data-form-tab="upload" onclick="switchFormTab('upload')">UPLOAD</button>
+        </div>
+
+        <!-- Form Content -->
+        <div class="form-content">
+            <!-- DETAIL TAB -->
+            <div class="form-tab-content active" id="tab-detail">
+                <!-- Section I: Data Pegawai -->
+                <div class="form-section">
+                    <h3 class="form-section-title">📋 I. DATA PEGAWAI</h3>
+
+                    <div class="form-group">
+                        <label class="form-label">NAMA LENGKAP</label>
+                        <input type="text" id="form-nama" class="form-input" placeholder="Nama Lengkap Sesuai SK"
+                            readonly>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">NIP</label>
+                            <input type="text" id="form-nip" class="form-input" placeholder="18XXXXXXXXXXXX" readonly>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">PANGKAT / GOLONGAN</label>
+                            <select id="form-pangkat" class="form-input form-select">
+                                <option value="">Pilih Golongan ▼</option>
+                                <option value="-">-</option>
+                                <option value="I/a">I/a - Juru Muda</option>
+                                <option value="I/b">I/b - Juru Muda Tingkat I</option>
+                                <option value="I/c">I/c - Juru</option>
+                                <option value="I/d">I/d - Juru Tingkat I</option>
+                                <option value="II/a">II/a - Pengatur Muda</option>
+                                <option value="II/b">II/b - Pengatur Muda Tingkat I</option>
+                                <option value="II/c">II/c - Pengatur</option>
+                                <option value="II/d">II/d - Pengatur Tingkat I</option>
+                                <option value="III/a">III/a - Penata Muda</option>
+                                <option value="III/b">III/b - Penata Muda Tingkat I</option>
+                                <option value="III/c">III/c - Penata</option>
+                                <option value="III/d">III/d - Penata Tingkat I</option>
+                                <option value="IV/a">IV/a - Pembina</option>
+                                <option value="IV/b">IV/b - Pembina Tingkat I</option>
+                                <option value="IV/c">IV/c - Pembina Utama Muda</option>
+                                <option value="IV/d">IV/d - Pembina Utama Madya</option>
+                                <option value="IV/e">IV/e - Pembina Utama</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">JABATAN</label>
+                        <input type="text" id="form-jabatan" class="form-input"
+                            placeholder="Jabatan Struktural/Fungsional" readonly>
+                    </div>
+                </div>
+
+                <!-- Section II: Detail Perjalanan -->
+                <div class="form-section">
+                    <h3 class="form-section-title">🚗 II. DETAIL PERJALANAN</h3>
+
+                    <div class="form-group">
+                        <label class="form-label">MAKSUD PERJALANAN DINAS</label>
+                        <textarea id="form-maksud" class="form-input form-textarea" rows="3"
+                            placeholder="Uraikan detail maksud dan tujuan kegiatan dinas secara lengkap..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">ALAT ANGKUTAN YANG DIGUNAKAN</label>
+                        <input type="text" id="form-angkutan" class="form-input"
+                            placeholder="Contoh: Pesawat Udara / Kendaraan Dinas">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">TEMPAT BERANGKAT</label>
+                            <input type="text" id="form-tempat-berangkat" class="form-input" placeholder="Kota asal">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">TEMPAT TUJUAN</label>
+                            <input type="text" id="form-tempat-tujuan" class="form-input" placeholder="Kota tujuan">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">TANGGAL BERANGKAT</label>
+                            <input type="date" id="form-tgl-berangkat" class="form-input">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">TANGGAL KEMBALI</label>
+                            <input type="date" id="form-tgl-kembali" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">LAMA PERJALANAN (HARI)</label>
+                        <input type="number" id="form-lama" class="form-input" placeholder="Jumlah hari" min="1">
+                    </div>
+                </div>
+
+                <!-- Navigation Button -->
+                <button class="btn-next" onclick="switchFormTab('tujuan')">
+                    BERIKUTNYA
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- TUJUAN TAB -->
+            <div class="form-tab-content" id="tab-tujuan">
+                <!-- Section III: Administrasi & Dasar SPT -->
+                <div class="form-section">
+                    <h3 class="form-section-title">📄 III. ADMINISTRASI & DASAR SPT</h3>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">NOMOR SPT</label>
+                            <input type="text" id="form-nomor-spt" class="form-input" placeholder="000/SPD/KPU...">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">TANGGAL SPT & SPD</label>
+                            <input type="date" id="form-tgl-spt" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">DASAR SPT (RUJUKAN/UNDANGAN)</label>
+                        <input type="text" id="form-dasar-spt" class="form-input"
+                            placeholder="Contoh: Surat Sekretaris Jenderal KPU/ Nomor...">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">KETERANGAN LAIN-LAIN</label>
+                        <input type="text" id="form-keterangan" class="form-input"
+                            placeholder="Informasi tambahan jika ada">
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="btn-nav-group">
+                    <button class="btn-prev" onclick="switchFormTab('detail')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        KEMBALI
+                    </button>
+                    <button class="btn-next" onclick="switchFormTab('upload')">
+                        BERIKUTNYA
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- UPLOAD TAB -->
+            <div class="form-tab-content" id="tab-upload">
+                <!-- Section IV: Unggah Berkas Dukung -->
+                <div class="form-section">
+                    <h3 class="form-section-title">📎 IV. UNGGAH BERKAS DUKUNG</h3>
+
+                    <div class="form-group">
+                        <label class="form-label">1. SURAT TUGAS (SPT)</label>
+                        <div class="file-upload">
+                            <input type="file" id="file-spt" class="file-input" accept=".pdf,.jpg,.png">
+                            <label for="file-spt" class="file-label">
+                                <span class="file-choose">Choose File</span>
+                                <span class="file-name">No file chosen</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">2. LEMBAR SPPD</label>
+                        <div class="file-upload">
+                            <input type="file" id="file-sppd" class="file-input" accept=".pdf,.jpg,.png">
+                            <label for="file-sppd" class="file-label">
+                                <span class="file-choose">Choose File</span>
+                                <span class="file-name">No file chosen</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">3. BILL HOTEL</label>
+                        <div class="file-upload">
+                            <input type="file" id="file-hotel" class="file-input" accept=".pdf,.jpg,.png">
+                            <label for="file-hotel" class="file-label">
+                                <span class="file-choose">Choose File</span>
+                                <span class="file-name">No file chosen</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">4. TIKET/TRANSPORTASI</label>
+                        <div class="file-upload">
+                            <input type="file" id="file-tiket" class="file-input" accept=".pdf,.jpg,.png">
+                            <label for="file-tiket" class="file-label">
+                                <span class="file-choose">Choose File</span>
+                                <span class="file-name">No file chosen</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">5. LAPORAN OUTPUT</label>
+                        <div class="file-upload">
+                            <input type="file" id="file-laporan" class="file-input" accept=".pdf,.jpg,.png">
+                            <label for="file-laporan" class="file-label">
+                                <span class="file-choose">Choose File</span>
+                                <span class="file-name">No file chosen</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">6. SURAT UNDANGAN</label>
+                        <div class="file-upload">
+                            <input type="file" id="file-undangan" class="file-input" accept=".pdf,.jpg,.png">
+                            <label for="file-undangan" class="file-label">
+                                <span class="file-choose">Choose File</span>
+                                <span class="file-name">No file chosen</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="btn-nav-group">
+                    <button class="btn-prev" onclick="switchFormTab('tujuan')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        KEMBALI
+                    </button>
+                    <button class="btn-submit" onclick="submitLaporan()">
+                        KIRIM LAPORAN
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item" data-tab="beranda" onclick="switchTab('beranda')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                Beranda
+            </button>
+            <button class="nav-item active" data-tab="tambah" onclick="switchTab('tambah')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <line x1="12" y1="8" x2="12" y2="16" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+                Tambah Laporan
+            </button>
+            <button class="nav-item" data-tab="monitoring" onclick="switchTab('monitoring')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Monitoring
+            </button>
+        </nav>
+    </div>
+
+    <!-- Monitoring Bulanan Screen -->
+    <div id="monitoring-screen" class="screen">
+        <!-- Header -->
+        <header class="monitoring-header">
+            <div class="monitoring-header-left">
+                <button class="monitoring-back-btn" onclick="switchTab('beranda')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </button>
+            </div>
+            <div class="monitoring-header-center">
+                <h1 class="monitoring-title">MONITORING BULANAN</h1>
+                <p class="monitoring-subtitle">KPU KABUPATEN KONAWE UTARA</p>
+            </div>
+            <div class="monitoring-header-right">
+                <button class="monitoring-calendar-btn" onclick="openCalendarView()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Period Selector -->
+        <div class="period-selector">
+            <button class="period-nav-btn" onclick="changePeriod(-1)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6" />
+                </svg>
+            </button>
+            <div class="period-display">
+                <div class="period-label">PERIODE</div>
+                <div class="period-value" id="current-period">Februari 2026</div>
+            </div>
+            <button class="period-nav-btn" onclick="changePeriod(1)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Quick Action Buttons -->
+        <div class="quick-actions">
+            <a href="#" class="quick-action-btn sheet-btn" id="btn-open-sheet"
+                onclick="openMonitoringSheet(); return false;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                </svg>
+                Buka di Sheet
+            </a>
+            <a href="#" class="quick-action-btn drive-btn" id="btn-open-drive"
+                onclick="openDriveFolder(); return false;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                </svg>
+                Cek Berkas Upload
+            </a>
+        </div>
+
+        <!-- Content -->
+        <div class="monitoring-content">
+            <!-- Section Header -->
+            <div class="data-section-header">
+                <div class="data-section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    LAPORAN PEGAWAI
+                </div>
+                <span class="data-count-badge" id="monitoring-count">Total: 0</span>
+            </div>
+
+            <!-- Data Table -->
+            <div class="monitoring-table-container">
+                <div class="monitoring-table-header">
+                    <div class="table-header-cell">NAMA PEGAWAI</div>
+                    <div class="table-header-cell">TUJUAN</div>
+                    <div class="table-header-cell">TGL BERANGKAT</div>
+                </div>
+                <div class="monitoring-table-body" id="monitoring-table-body">
+                    <!-- Data will be loaded dynamically -->
+                    <div class="monitoring-loading">
+                        <div class="spinner"></div>
+                        Memuat data monitoring...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="monitoring-bottom-nav">
+            <button class="monitoring-nav-item" onclick="switchTab('beranda')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                BERANDA
+            </button>
+            <button class="monitoring-nav-item" onclick="switchTab('tambah')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <line x1="12" y1="8" x2="12" y2="16" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+                TAMBAH LAPORAN
+            </button>
+            <button class="monitoring-nav-item active" onclick="switchTab('monitoring')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                MONITORING
+            </button>
+        </nav>
+    </div>
+
+    <!-- Calendar View Screen -->
+    <div id="calendar-screen" class="screen">
+        <!-- Header -->
+        <header class="calendar-header">
+            <button class="calendar-back-btn" onclick="closeCalendarView()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6" />
+                </svg>
+            </button>
+            <span class="calendar-header-title">Monitoring Kalender</span>
+            <div style="width: 40px;"></div>
+        </header>
+
+        <!-- Content -->
+        <div class="calendar-content">
+            <!-- Period Selector -->
+            <div class="calendar-period-label">Pilih Periode Monitoring</div>
+            <div class="calendar-period-selector" onclick="showCalendarMonthPicker()">
+                <div>
+                    <div class="calendar-period-value" id="calendar-period-value">Februari 2026</div>
+                </div>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6" />
+                </svg>
+            </div>
+
+            <!-- Calendar Section -->
+            <div class="calendar-section-title">Kalender Perjalanan Dinas</div>
+            <div class="calendar-section-subtitle">KPU Kabupaten Konawe Utara</div>
+
+            <!-- Calendar Grid -->
+            <div class="calendar-grid-container">
+                <div class="calendar-grid-wrapper">
+                    <div class="calendar-grid" id="calendar-grid">
+                        <!-- Grid will be generated by JavaScript -->
+                        <div class="monitoring-loading">
+                            <div class="spinner"></div>
+                            Memuat kalender...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="calendar-legend">
+                <div class="calendar-legend-title">KETERANGAN LEGEND</div>
+                <div class="calendar-legend-items">
+                    <div class="calendar-legend-item">
+                        <div class="legend-box"></div>
+                        Hari Libur / Weekend
+                    </div>
+                    <div class="calendar-legend-item">
+                        <span class="legend-text">P</span>
+                        Perjadin (Aktif)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Month Picker Modal -->
+    <div id="month-picker-overlay" class="month-picker-overlay">
+        <div class="month-picker-modal">
+            <div class="month-picker-header">
+                <div class="month-picker-title">Pilih Periode</div>
+            </div>
+            <div class="month-picker-year-selector">
+                <button class="year-nav-btn" onclick="changePickerYear(-1)">◀</button>
+                <span class="year-display" id="picker-year-display">2026</span>
+                <button class="year-nav-btn" onclick="changePickerYear(1)">▶</button>
+            </div>
+            <div class="month-picker-grid" id="month-picker-grid">
+                <!-- Month buttons will be generated by JavaScript -->
+            </div>
+            <div class="month-picker-footer">
+                <button class="month-picker-btn cancel" onclick="closeMonthPicker()">Batal</button>
+                <button class="month-picker-btn confirm" onclick="confirmMonthPicker()">Pilih</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== KONFIGURASI API ==========
+        // URL deploy Apps Script terbaru
+        const API_URL = 'https://script.google.com/macros/s/AKfycby8kLZ3CSK-NOEK5xc0mLjd7Ce8GOeYa3nihwTDJnRiFbJvpuuBHjt_jARSXQ15dKVLuw/exec';
+
+        // ========== HELPER FUNCTION ==========
+        async function callAPI(action, params = {}) {
+            const url = new URL(API_URL);
+            url.searchParams.append('action', action);
+            Object.keys(params).forEach(key => {
+                if (params[key] !== undefined && params[key] !== null) {
+                    url.searchParams.append(key, params[key]);
+                }
+            });
+
+            console.log('Calling API:', url.toString());
+
+            try {
+                const response = await fetch(url.toString(), {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data);
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                // Show error to user for debugging
+                alert('Error memanggil API: ' + error.message + '\n\nPastikan:\n1. Code.gs sudah di-update di Apps Script\n2. Sudah deploy ulang sebagai "New Version"\n3. Access = "Anyone"');
+                throw error;
+            }
+        }
+
+        // ========== MAIN APP ==========
+        let allEmployees = [];
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadEmployees();
+
+            const loginBtn = document.getElementById('btn-login');
+            const demoBtn = document.getElementById('btn-demo');
+
+            loginBtn.addEventListener('click', function () {
+                const selectedEmployee = $('#employee-select').val();
+                if (!selectedEmployee) {
+                    alert('Silakan pilih nama pegawai terlebih dahulu.');
+                    return;
+                }
+                loginUser(selectedEmployee);
+            });
+
+            demoBtn.addEventListener('click', function () {
+                loginUser('RINDY');
+            });
+
+            // Dark mode button event listeners
+            const darkModeBtn = document.getElementById('btn-dark-mode');
+            if (darkModeBtn) {
+                darkModeBtn.addEventListener('click', toggleDarkMode);
+            }
+
+            const darkModeFormBtn = document.getElementById('btn-dark-mode-form');
+            if (darkModeFormBtn) {
+                darkModeFormBtn.addEventListener('click', toggleDarkMode);
+            }
+        });
+
+        async function loadEmployees() {
+            const select = document.getElementById('employee-select');
+            select.innerHTML = '<option value="">Memuat data...</option>';
+
+            try {
+                const employees = await callAPI('getEmployeeList');
+                console.log('Employees loaded:', employees);
+                allEmployees = employees || [];
+
+                // Clear and add placeholder
+                select.innerHTML = '<option value="">Cari & Pilih Nama...</option>';
+
+                if (allEmployees.length > 0) {
+                    // Add first 5 employees as initial options
+                    allEmployees.slice(0, 5).forEach(name => {
+                        const opt = document.createElement('option');
+                        opt.value = name;
+                        opt.textContent = name;
+                        select.appendChild(opt);
+                    });
+                }
+
+                // Initialize Select2 with all employees as data source
+                $('#employee-select').select2({
+                    placeholder: 'Cari & Pilih Nama...',
+                    allowClear: true,
+                    minimumInputLength: 0,
+                    data: allEmployees.map(name => ({ id: name, text: name })),
+                    dropdownParent: $('.input-group'),
+                    language: {
+                        noResults: function () {
+                            return 'Tidak ditemukan';
+                        },
+                        searching: function () {
+                            return 'Mencari...';
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Failed to load employees:', error);
+                select.innerHTML = '<option value="">Error memuat data</option>';
+            }
+        }
+
+        // Generate initials from name
+        function getInitials(name) {
+            if (!name) return 'NA';
+            const words = name.trim().split(/\s+/);
+            if (words.length === 1) {
+                return words[0].substring(0, 2).toUpperCase();
+            }
+            return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+        }
+
+        function loginUser(name) {
+            localStorage.setItem('currentUser', name);
+
+            document.getElementById('login-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('login-screen').classList.remove('active');
+                document.body.classList.add('dashboard-mode');
+                document.getElementById('main-dashboard').classList.add('active');
+
+                document.getElementById('dash-user-name').textContent = 'Halo, ' + name;
+                document.getElementById('dash-user-avatar').textContent = getInitials(name);
+
+                // Initialize dark mode preference
+                initDarkMode();
+
+                loadDashboardData(name);
+            }, 400);
+        }
+
+        async function loadDashboardData(userName) {
+            try {
+                // Load employee data
+                const empData = await callAPI('getEmployeeData', { name: userName });
+                if (empData) {
+                    document.getElementById('dash-user-nip').textContent = 'NIP: ' + empData.nip;
+                }
+
+                // Load report stats
+                const stats = await callAPI('getReportStats', { name: userName });
+                document.getElementById('count-lengkap').textContent = stats.lengkap;
+                document.getElementById('count-belum').textContent = stats.belumLengkap;
+
+                // Load recent reports
+                const reports = await callAPI('getRecentReports', { name: userName, limit: 5 });
+                renderReports(reports);
+
+                document.getElementById('last-sync').textContent = 'Baru saja';
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+            }
+        }
+
+        function renderReports(reports) {
+            const container = document.getElementById('reports-list');
+            if (!reports || reports.length === 0) {
+                container.innerHTML = '<p style="color: var(--dash-text-muted); text-align: center; padding: 2rem;">Belum ada laporan</p>';
+                return;
+            }
+
+            container.innerHTML = reports.map(report => `
+                <div class="report-item">
+                    <div class="report-icon ${report.status === 'Lengkap' ? 'teal' : 'blue'}">
+                        ${report.status === 'Lengkap' ? '✈' : '🖥'}
+                    </div>
+                    <div class="report-details">
+                        <div class="report-title">${report.keperluan}</div>
+                        <div class="report-date">${report.tglBerangkat} - ${report.tglKembali}</div>
+                    </div>
+                    <span class="report-status ${report.status === 'Lengkap' ? 'complete' : 'incomplete'}">
+                        ${report.status.toUpperCase()}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        async function refreshData() {
+            const btn = document.querySelector('.btn-refresh');
+            const userName = localStorage.getItem('currentUser');
+
+            btn.innerHTML = '<svg width="18" height="18" class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Memuat...';
+
+            try {
+                const stats = await callAPI('getReportStats', { name: userName });
+                document.getElementById('count-lengkap').textContent = stats.lengkap;
+                document.getElementById('count-belum').textContent = stats.belumLengkap;
+
+                const reports = await callAPI('getRecentReports', { name: userName, limit: 5 });
+                renderReports(reports);
+
+                document.getElementById('last-sync').textContent = 'Baru saja';
+            } catch (error) {
+                console.error('Refresh failed:', error);
+            }
+
+            btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Refresh';
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        // ========== DARK MODE TOGGLE ==========
+        function toggleDarkMode() {
+            const body = document.body;
+
+            body.classList.toggle('dark-mode');
+
+            // Update all dark mode buttons
+            const isDark = body.classList.contains('dark-mode');
+            document.querySelectorAll('#btn-dark-mode, #btn-dark-mode-form').forEach(btn => {
+                if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+            });
+
+            localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+        }
+
+        // Initialize dark mode from localStorage
+        function initDarkMode() {
+            const darkMode = localStorage.getItem('darkMode');
+            if (darkMode === 'true') {
+                document.body.classList.add('dark-mode');
+                document.querySelectorAll('#btn-dark-mode, #btn-dark-mode-form').forEach(btn => {
+                    if (btn) btn.textContent = '☀️';
+                });
+            }
+        }
+
+        // ========== TAB NAVIGATION ==========
+        function switchTab(tabName) {
+            const screens = {
+                'beranda': 'main-dashboard',
+                'tambah': 'tambah-laporan',
+                'monitoring': 'monitoring-screen'
+            };
+
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            // Show target screen
+            const targetId = screens[tabName];
+            if (targetId) {
+                document.getElementById(targetId).classList.add('active');
+            }
+
+            // Update nav item active states (for normal bottom nav)
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.tab === tabName) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Update monitoring nav items
+            document.querySelectorAll('.monitoring-nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (tabName === 'monitoring') {
+                document.querySelector('.monitoring-nav-item[onclick*="monitoring"]')?.classList.add('active');
+            } else if (tabName === 'beranda') {
+                document.querySelector('.monitoring-nav-item[onclick*="beranda"]')?.classList.add('active');
+            }
+
+            // If switching to tambah, pre-fill user data
+            if (tabName === 'tambah') {
+                fillUserDataInForm();
+            }
+
+            // If switching to monitoring, load monitoring data
+            if (tabName === 'monitoring') {
+                initMonitoringPage();
+            }
+
+            // Apply dark mode if enabled
+            initDarkMode();
+        }
+
+        // Switch between form tabs (DETAIL, TUJUAN, UPLOAD)
+        function switchFormTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.form-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.formTab === tabName) {
+                    tab.classList.add('active');
+                }
+            });
+
+            // Update tab content
+            document.querySelectorAll('.form-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        // Pre-fill form with logged in user data
+        async function fillUserDataInForm() {
+            const userName = localStorage.getItem('currentUser');
+            if (!userName) return;
+
+            try {
+                const empData = await callAPI('getEmployeeData', { name: userName });
+                if (empData) {
+                    document.getElementById('form-nama').value = empData.nama || userName;
+                    document.getElementById('form-nip').value = empData.nip || '-';
+                    document.getElementById('form-jabatan').value = empData.jabatan || '-';
+                }
+            } catch (error) {
+                console.error('Failed to load user data for form:', error);
+                document.getElementById('form-nama').value = userName;
+            }
+        }
+
+        // ========== FILE UPLOAD HANDLERS ==========
+        document.querySelectorAll('.file-input').forEach(input => {
+            input.addEventListener('change', function () {
+                const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
+                this.nextElementSibling.querySelector('.file-name').textContent = fileName;
+            });
+        });
+
+        // ========== FORM SUBMISSION ==========
+        // Convert file to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                if (!file) {
+                    resolve(null);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function submitLaporan() {
+            const btn = document.querySelector('.btn-submit');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spin">⏳</span> Mengirim...';
+
+            try {
+                // Collect form data
+                const formData = {
+                    nama: document.getElementById('form-nama').value,
+                    nip: document.getElementById('form-nip').value,
+                    pangkat: document.getElementById('form-pangkat').value,
+                    jabatan: document.getElementById('form-jabatan').value,
+                    maksud: document.getElementById('form-maksud').value,
+                    angkutan: document.getElementById('form-angkutan').value,
+                    tempatBerangkat: document.getElementById('form-tempat-berangkat').value,
+                    tempatTujuan: document.getElementById('form-tempat-tujuan').value,
+                    tglBerangkat: document.getElementById('form-tgl-berangkat').value,
+                    tglKembali: document.getElementById('form-tgl-kembali').value,
+                    lamaHari: document.getElementById('form-lama').value,
+                    nomorSpt: document.getElementById('form-nomor-spt').value,
+                    tglSpt: document.getElementById('form-tgl-spt').value,
+                    dasarSpt: document.getElementById('form-dasar-spt').value,
+                    files: []
+                };
+
+                // Validate required fields
+                if (!formData.nama || !formData.maksud || !formData.tglBerangkat) {
+                    alert('Mohon lengkapi data perjalanan:\n- Nama Pegawai\n- Maksud Perjalanan\n- Tanggal Berangkat');
+                    btn.disabled = false;
+                    btn.innerHTML = 'KIRIM LAPORAN <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+                    return;
+                }
+
+                // Collect files (optional)
+                btn.innerHTML = '<span class="spin">⏳</span> Mengupload file...';
+
+                const fileInputs = [
+                    { id: 'file-spt', name: 'SPT' },
+                    { id: 'file-sppd', name: 'SPPD' },
+                    { id: 'file-kuitansi', name: 'KUITANSI' },
+                    { id: 'file-boarding', name: 'BOARDING_PASS' },
+                    { id: 'file-laporan', name: 'LAPORAN' },
+                    { id: 'file-undangan', name: 'UNDANGAN' }
+                ];
+
+                for (const fileInput of fileInputs) {
+                    const input = document.getElementById(fileInput.id);
+                    if (input && input.files && input.files[0]) {
+                        const file = input.files[0];
+                        const base64 = await fileToBase64(file);
+                        if (base64) {
+                            formData.files.push({
+                                data: base64,
+                                name: fileInput.name + '_' + file.name,
+                                type: fileInput.name
+                            });
+                        }
+                    }
+                }
+
+                console.log('Sending form data with ' + formData.files.length + ' files');
+
+                // Send to monitoring API with files
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: JSON.stringify({
+                        action: 'submitMonitoringWithFiles',
+                        payload: formData
+                    }),
+                    redirect: 'follow'
+                });
+
+                const result = await response.json();
+                console.log('API response:', result);
+
+                if (result.success) {
+                    const statusMsg = result.status === 'Lengkap'
+                        ? '✅ Status: LENGKAP'
+                        : '⚠️ Status: BELUM LENGKAP (ada berkas yang belum diupload)';
+
+                    alert('✅ ' + result.message + '\n\nSheet: ' + result.spreadsheetName + '\n' + statusMsg + '\n\nFile terupload: ' + result.uploadedCount);
+
+                    // Clear form (except readonly fields)
+                    document.querySelectorAll('.form-input').forEach(input => {
+                        if (!input.readOnly) input.value = '';
+                    });
+
+                    // Clear file inputs
+                    document.querySelectorAll('.file-input').forEach(input => {
+                        input.value = '';
+                        input.nextElementSibling.querySelector('.file-name').textContent = 'No file chosen';
+                    });
+
+                    // Switch back to beranda and refresh
+                    switchTab('beranda');
+                    refreshData();
+                } else {
+                    alert('❌ Gagal mengirim: ' + (result.message || result.error));
+                }
+
+            } catch (error) {
+                console.error('Submit error:', error);
+                alert('❌ Gagal mengirim laporan: ' + error.message);
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = 'KIRIM LAPORAN <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+        }
+
+        // ========== MONITORING PAGE FUNCTIONS ==========
+        const BULAN_INDONESIA = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+
+        let currentMonitoringMonth = new Date().getMonth();
+        let currentMonitoringYear = new Date().getFullYear();
+
+        function initMonitoringPage() {
+            updatePeriodDisplay();
+            loadMonitoringData();
+        }
+
+        function updatePeriodDisplay() {
+            const bulan = BULAN_INDONESIA[currentMonitoringMonth];
+            const tahun = currentMonitoringYear;
+            document.getElementById('current-period').textContent = `${bulan} ${tahun}`;
+        }
+
+        function changePeriod(direction) {
+            currentMonitoringMonth += direction;
+
+            if (currentMonitoringMonth > 11) {
+                currentMonitoringMonth = 0;
+                currentMonitoringYear++;
+            } else if (currentMonitoringMonth < 0) {
+                currentMonitoringMonth = 11;
+                currentMonitoringYear--;
+            }
+
+            updatePeriodDisplay();
+            loadMonitoringData();
+        }
+
+        function showMonthPicker() {
+            // Simple month picker using prompt
+            const months = BULAN_INDONESIA.map((b, i) => `${i + 1}. ${b}`).join('\n');
+            const monthInput = prompt(`Pilih bulan (1-12):\n${months}`);
+
+            if (monthInput) {
+                const monthNum = parseInt(monthInput);
+                if (monthNum >= 1 && monthNum <= 12) {
+                    currentMonitoringMonth = monthNum - 1;
+
+                    const yearInput = prompt('Masukkan tahun:', currentMonitoringYear.toString());
+                    if (yearInput) {
+                        const yearNum = parseInt(yearInput);
+                        if (yearNum >= 2020 && yearNum <= 2030) {
+                            currentMonitoringYear = yearNum;
+                        }
+                    }
+
+                    updatePeriodDisplay();
+                    loadMonitoringData();
+                }
+            }
+        }
+
+        async function loadMonitoringData() {
+            const tableBody = document.getElementById('monitoring-table-body');
+            const countBadge = document.getElementById('monitoring-count');
+
+            // Show loading
+            tableBody.innerHTML = `
+                <div class="monitoring-loading">
+                    <div class="spinner"></div>
+                    Memuat data monitoring...
+                </div>
+            `;
+
+            const bulan = BULAN_INDONESIA[currentMonitoringMonth];
+            const tahun = currentMonitoringYear;
+
+            try {
+                const result = await callAPI('getMonitoringData', { bulan, tahun });
+                console.log('Monitoring data:', result);
+
+                if (result.error && result.data && result.data.length === 0) {
+                    // No data for this period
+                    tableBody.innerHTML = `
+                        <div class="monitoring-empty">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M9 12h6M12 9v6M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p>Belum ada data monitoring untuk periode ini</p>
+                            <p style="font-size: 0.8rem; margin-top: 0.5rem; color: #00d2ff;">
+                                Klik "Tambah Laporan" untuk menambahkan data
+                            </p>
+                        </div>
+                    `;
+                    countBadge.textContent = 'Total: 0';
+                    return;
+                }
+
+                const data = result.data || [];
+                countBadge.textContent = `Total: ${data.length}`;
+
+                if (data.length === 0) {
+                    tableBody.innerHTML = `
+                        <div class="monitoring-empty">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M9 12h6M12 9v6M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p>Belum ada data monitoring untuk periode ini</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render data rows
+                tableBody.innerHTML = data.map(row => {
+                    const nama = row['NAMA'] || '-';
+                    const nip = row['NIP'] || '';
+                    const tujuan = row['TEMPAT TUJUAN'] || row['TUJUAN'] || '-';
+                    const tglBerangkat = formatMonitoringDate(row['TANGGAL BERANGKAT']);
+
+                    // Get initials for display
+                    const nipShort = nip ? `NIP. ${nip.toString().substring(0, 6)}...` : '';
+
+                    return `
+                        <div class="monitoring-table-row">
+                            <div class="table-cell">
+                                <span class="cell-primary">${nama}</span>
+                                <span class="cell-secondary">${nipShort}</span>
+                            </div>
+                            <div class="table-cell">
+                                <span class="cell-tujuan">${tujuan}</span>
+                            </div>
+                            <div class="table-cell">
+                                <span class="cell-date">${tglBerangkat}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Failed to load monitoring data:', error);
+                tableBody.innerHTML = `
+                    <div class="monitoring-empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <p>Gagal memuat data</p>
+                        <p style="font-size: 0.8rem; color: #ff6b6b;">${error.message}</p>
+                    </div>
+                `;
+                countBadge.textContent = 'Total: 0';
+            }
+        }
+
+        function formatMonitoringDate(dateVal) {
+            if (!dateVal) return '-';
+
+            try {
+                let date;
+                if (typeof dateVal === 'string') {
+                    // Handle various date formats
+                    if (dateVal.includes('/')) {
+                        // Format: MM/DD/YYYY or DD/MM/YYYY
+                        const parts = dateVal.split('/');
+                        if (parts.length === 3) {
+                            date = new Date(parts[2], parts[0] - 1, parts[1]);
+                        }
+                    } else if (dateVal.includes('-')) {
+                        // Format: YYYY-MM-DD
+                        date = new Date(dateVal);
+                    } else {
+                        date = new Date(dateVal);
+                    }
+                } else if (dateVal instanceof Date) {
+                    date = dateVal;
+                } else {
+                    return dateVal.toString();
+                }
+
+                if (isNaN(date.getTime())) {
+                    return dateVal.toString();
+                }
+
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = BULAN_INDONESIA[date.getMonth()].substring(0, 3);
+                const year = date.getFullYear().toString().substring(2);
+
+                return `${day} ${month} ${year}`;
+            } catch (e) {
+                return dateVal.toString();
+            }
+        }
+
+        // Drive folder ID for uploads
+        const DRIVE_FOLDER_ID = '1nBZmPI-NzNuy6PEIhuCtkdy8mcAjb1vo';
+
+        // Store current sheet URL from API response
+        let currentSheetUrl = null;
+
+        function openMonitoringSheet() {
+            if (currentSheetUrl) {
+                window.open(currentSheetUrl, '_blank');
+            } else {
+                // Try to get the sheet URL from the API
+                const bulan = BULAN_INDONESIA[currentMonitoringMonth];
+                const tahun = currentMonitoringYear;
+
+                callAPI('getMonitoringData', { bulan, tahun })
+                    .then(result => {
+                        if (result.spreadsheetUrl) {
+                            currentSheetUrl = result.spreadsheetUrl;
+                            window.open(currentSheetUrl, '_blank');
+                        } else {
+                            alert('Sheet untuk periode ini belum tersedia.\nSilakan tambahkan laporan terlebih dahulu.');
+                        }
+                    })
+                    .catch(err => {
+                        alert('Gagal membuka sheet: ' + err.message);
+                    });
+            }
+        }
+
+        function openDriveFolder() {
+            const driveUrl = `https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}`;
+            window.open(driveUrl, '_blank');
+        }
+
+        // Update loadMonitoringData to store sheet URL
+        const originalLoadMonitoringData = loadMonitoringData;
+        loadMonitoringData = async function () {
+            const tableBody = document.getElementById('monitoring-table-body');
+            const countBadge = document.getElementById('monitoring-count');
+
+            // Show loading
+            tableBody.innerHTML = `
+                <div class="monitoring-loading">
+                    <div class="spinner"></div>
+                    Memuat data monitoring...
+                </div>
+            `;
+
+            const bulan = BULAN_INDONESIA[currentMonitoringMonth];
+            const tahun = currentMonitoringYear;
+
+            try {
+                const result = await callAPI('getMonitoringData', { bulan, tahun });
+                console.log('Monitoring data:', result);
+
+                // Store sheet URL for quick access
+                if (result.spreadsheetUrl) {
+                    currentSheetUrl = result.spreadsheetUrl;
+                } else {
+                    currentSheetUrl = null;
+                }
+
+                if (result.error && result.data && result.data.length === 0) {
+                    tableBody.innerHTML = `
+                        <div class="monitoring-empty">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M9 12h6M12 9v6M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p>Belum ada data monitoring untuk periode ini</p>
+                            <p style="font-size: 0.8rem; margin-top: 0.5rem; color: #2ebcb3;">
+                                Klik "Tambah Laporan" untuk menambahkan data
+                            </p>
+                        </div>
+                    `;
+                    countBadge.textContent = 'Total: 0';
+                    return;
+                }
+
+                const data = result.data || [];
+                countBadge.textContent = `Total: ${data.length}`;
+
+                if (data.length === 0) {
+                    tableBody.innerHTML = `
+                        <div class="monitoring-empty">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M9 12h6M12 9v6M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p>Belum ada data monitoring untuk periode ini</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render data rows
+                tableBody.innerHTML = data.map(row => {
+                    const nama = row['NAMA'] || '-';
+                    const nip = row['NIP'] || '';
+                    const tujuan = row['TEMPAT TUJUAN'] || row['TUJUAN'] || '-';
+                    const tglBerangkat = formatMonitoringDate(row['TANGGAL BERANGKAT']);
+
+                    const nipShort = nip ? `NIP. ${nip.toString().substring(0, 6)}...` : '';
+
+                    return `
+                        <div class="monitoring-table-row">
+                            <div class="table-cell">
+                                <span class="cell-primary">${nama}</span>
+                                <span class="cell-secondary">${nipShort}</span>
+                            </div>
+                            <div class="table-cell">
+                                <span class="cell-tujuan">${tujuan}</span>
+                            </div>
+                            <div class="table-cell">
+                                <span class="cell-date">${tglBerangkat}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Failed to load monitoring data:', error);
+                tableBody.innerHTML = `
+                    <div class="monitoring-empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <p>Gagal memuat data</p>
+                        <p style="font-size: 0.8rem; color: #ff6b6b;">${error.message}</p>
+                    </div>
+                `;
+                countBadge.textContent = 'Total: 0';
+            }
+        };
+
+        // ========== CALENDAR VIEW FUNCTIONS ==========
+        let calendarMonth = new Date().getMonth();
+        let calendarYear = new Date().getFullYear();
+        let calendarData = [];
+
+        function openCalendarView() {
+            // Sync calendar period with monitoring period
+            calendarMonth = currentMonitoringMonth;
+            calendarYear = currentMonitoringYear;
+
+            // Hide monitoring screen, show calendar screen
+            document.getElementById('monitoring-screen').classList.remove('active');
+            document.getElementById('calendar-screen').classList.add('active');
+
+            // Apply dark mode if enabled
+            initDarkMode();
+
+            // Load calendar data
+            updateCalendarPeriodDisplay();
+            loadCalendarData();
+        }
+
+        function closeCalendarView() {
+            document.getElementById('calendar-screen').classList.remove('active');
+            document.getElementById('monitoring-screen').classList.add('active');
+        }
+
+        function updateCalendarPeriodDisplay() {
+            const periodValue = document.getElementById('calendar-period-value');
+            periodValue.textContent = `${BULAN_INDONESIA[calendarMonth]} ${calendarYear}`;
+        }
+
+        function showCalendarMonthPicker() {
+            // Set picker to current calendar values
+            pickerYear = calendarYear;
+            pickerMonth = calendarMonth;
+
+            // Update display
+            document.getElementById('picker-year-display').textContent = pickerYear;
+            renderMonthPickerGrid();
+
+            // Show modal
+            document.getElementById('month-picker-overlay').classList.add('active');
+        }
+
+        let pickerYear = new Date().getFullYear();
+        let pickerMonth = new Date().getMonth();
+
+        function renderMonthPickerGrid() {
+            const grid = document.getElementById('month-picker-grid');
+            grid.innerHTML = BULAN_INDONESIA.map((month, index) => {
+                const isSelected = index === pickerMonth ? 'selected' : '';
+                return `<div class="month-picker-item ${isSelected}" onclick="selectPickerMonth(${index})">${month.substring(0, 3)}</div>`;
+            }).join('');
+        }
+
+        function selectPickerMonth(monthIndex) {
+            pickerMonth = monthIndex;
+            renderMonthPickerGrid();
+        }
+
+        function changePickerYear(delta) {
+            pickerYear += delta;
+            if (pickerYear < 2020) pickerYear = 2020;
+            if (pickerYear > 2030) pickerYear = 2030;
+            document.getElementById('picker-year-display').textContent = pickerYear;
+        }
+
+        function closeMonthPicker() {
+            document.getElementById('month-picker-overlay').classList.remove('active');
+        }
+
+        function confirmMonthPicker() {
+            calendarMonth = pickerMonth;
+            calendarYear = pickerYear;
+
+            closeMonthPicker();
+            updateCalendarPeriodDisplay();
+            loadCalendarData();
+        }
+
+        // Close modal when clicking overlay background
+        document.getElementById('month-picker-overlay')?.addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeMonthPicker();
+            }
+        });
+
+        async function loadCalendarData() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = `
+                <div class="monitoring-loading">
+                    <div class="spinner"></div>
+                    Memuat kalender...
+                </div>
+            `;
+
+            const bulan = BULAN_INDONESIA[calendarMonth];
+            const tahun = calendarYear;
+
+            try {
+                const result = await callAPI('getMonitoringData', { bulan, tahun });
+                calendarData = result.data || [];
+                renderCalendarGrid();
+            } catch (error) {
+                console.error('Failed to load calendar data:', error);
+                grid.innerHTML = `
+                    <div class="monitoring-empty">
+                        <p>Gagal memuat data kalender</p>
+                        <p style="font-size: 0.8rem; color: #ff6b6b;">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function getDaysInMonth(month, year) {
+            return new Date(year, month + 1, 0).getDate();
+        }
+
+        function isWeekend(day, month, year) {
+            const date = new Date(year, month, day);
+            const dayOfWeek = date.getDay();
+            return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
+        }
+
+        function parseDate(dateVal) {
+            if (!dateVal) return null;
+
+            try {
+                let date;
+                if (typeof dateVal === 'string') {
+                    if (dateVal.includes('/')) {
+                        const parts = dateVal.split('/');
+                        if (parts.length === 3) {
+                            date = new Date(parts[2], parts[0] - 1, parts[1]);
+                        }
+                    } else if (dateVal.includes('-')) {
+                        date = new Date(dateVal);
+                    } else {
+                        date = new Date(dateVal);
+                    }
+                } else if (dateVal instanceof Date) {
+                    date = dateVal;
+                }
+
+                if (date && !isNaN(date.getTime())) {
+                    return date;
+                }
+            } catch (e) {
+                console.error('Error parsing date:', e);
+            }
+            return null;
+        }
+
+        function getEmployeeTripDays(employeeData) {
+            const tripDays = new Set();
+
+            const startDate = parseDate(employeeData['TANGGAL BERANGKAT']);
+            const endDate = parseDate(employeeData['TANGGAL HARUS KEMBALI']);
+            const duration = parseInt(employeeData['LAMA SPPD (HARI)']) || 1;
+
+            if (startDate) {
+                // If we have both dates, use them
+                if (endDate) {
+                    let current = new Date(startDate);
+                    while (current <= endDate) {
+                        if (current.getMonth() === calendarMonth && current.getFullYear() === calendarYear) {
+                            tripDays.add(current.getDate());
+                        }
+                        current.setDate(current.getDate() + 1);
+                    }
+                } else {
+                    // Use duration
+                    for (let i = 0; i < duration; i++) {
+                        const tripDate = new Date(startDate);
+                        tripDate.setDate(startDate.getDate() + i);
+                        if (tripDate.getMonth() === calendarMonth && tripDate.getFullYear() === calendarYear) {
+                            tripDays.add(tripDate.getDate());
+                        }
+                    }
+                }
+            }
+
+            return tripDays;
+        }
+
+        function renderCalendarGrid() {
+            const grid = document.getElementById('calendar-grid');
+            const daysInMonth = getDaysInMonth(calendarMonth, calendarYear);
+
+            // Group data by employee name
+            const employeesMap = new Map();
+            calendarData.forEach(row => {
+                const name = row['NAMA'] || 'Unknown';
+                if (!employeesMap.has(name)) {
+                    employeesMap.set(name, []);
+                }
+                employeesMap.get(name).push(row);
+            });
+
+            if (employeesMap.size === 0) {
+                grid.innerHTML = `
+                    <div class="monitoring-empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 12h6M12 9v6M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p>Belum ada data perjalanan dinas untuk periode ini</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Build header row
+            let headerHtml = '<div class="calendar-grid-header">';
+            headerHtml += '<div class="calendar-grid-cell header name-cell">PEGAWAI</div>';
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isWeekendDay = isWeekend(day, calendarMonth, calendarYear);
+                headerHtml += `<div class="calendar-grid-cell header ${isWeekendDay ? 'weekend' : ''}">${day}</div>`;
+            }
+            headerHtml += '</div>';
+
+            // Build data rows
+            let rowsHtml = '';
+            employeesMap.forEach((trips, employeeName) => {
+                // Combine all trip days for this employee
+                const allTripDays = new Set();
+                trips.forEach(trip => {
+                    const tripDays = getEmployeeTripDays(trip);
+                    tripDays.forEach(day => allTripDays.add(day));
+                });
+
+                rowsHtml += '<div class="calendar-grid-row">';
+                rowsHtml += `<div class="calendar-grid-cell name-cell">${employeeName}</div>`;
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const isWeekendDay = isWeekend(day, calendarMonth, calendarYear);
+                    const hasTrip = allTripDays.has(day);
+
+                    let cellClass = 'calendar-grid-cell';
+                    if (isWeekendDay) cellClass += ' weekend';
+                    if (hasTrip) cellClass += ' has-trip';
+
+                    rowsHtml += `<div class="${cellClass}">`;
+                    if (hasTrip) {
+                        rowsHtml += '<span class="trip-marker">P</span>';
+                    }
+                    rowsHtml += '</div>';
+                }
+
+                rowsHtml += '</div>';
+            });
+
+            grid.innerHTML = headerHtml + rowsHtml;
+        }
+
+        // Update the calendar button to open calendar view
+        document.querySelector('.monitoring-calendar-btn')?.addEventListener('click', function (e) {
+            e.preventDefault();
+            openCalendarView();
+        });
+    </script>
+</body>
+
+</html>

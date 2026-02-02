@@ -1,0 +1,86 @@
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadEmployees();
+
+        const loginBtn = document.getElementById('btn-login');
+        const employeeSelect = document.getElementById('employee-select');
+
+        loginBtn.addEventListener('click', function () {
+            const selectedEmployee = employeeSelect.value;
+            if (!selectedEmployee) {
+                alert('Silakan pilih nama pegawai terlebih dahulu.');
+                return;
+            }
+
+            // Handle login logic
+            console.log('Logging in as:', selectedEmployee);
+            loginUser(selectedEmployee);
+        });
+    });
+
+    /**
+     * Loads employee list from Apps Script
+     */
+    function loadEmployees() {
+        if (typeof google !== 'undefined') {
+            google.script.run
+                .withSuccessHandler(function (employees) {
+                    const select = document.getElementById('employee-select');
+                    // Keep the first default option
+                    const defaultOpt = select.options[0];
+                    select.innerHTML = '';
+                    select.appendChild(defaultOpt);
+
+                    employees.forEach(name => {
+                        const opt = document.createElement('option');
+                        opt.value = name;
+                        opt.textContent = name;
+                        select.appendChild(opt);
+                    });
+                })
+                .withFailureHandler(function (err) {
+                    console.error('Failed to load employees:', err);
+                })
+                .getEmployeeList();
+        } else {
+            console.log('Running in local mode - using demo data');
+        }
+    }
+
+    /**
+     * Procedural login
+     */
+    function loginUser(name) {
+        localStorage.setItem('currentUser', name);
+
+        // Simple transition effect
+        document.getElementById('login-screen').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('login-screen').classList.remove('active');
+            document.getElementById('main-dashboard').classList.add('active');
+            document.getElementById('main-dashboard').style.opacity = '1';
+
+            // Load initial dashboard data
+            initDashboard();
+        }, 400);
+    }
+
+    function initDashboard() {
+        const user = localStorage.getItem('currentUser');
+        const dashboard = document.getElementById('main-dashboard');
+        dashboard.innerHTML = `
+        <div class="container">
+            <h2 style="margin-bottom: 2rem">Selamat Datang, <br><span style="color: #00d2ff">${user}</span></h2>
+            <div class="card" style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1)">
+                <p style="color: #8da2b5; margin-bottom: 2rem">Menu Monitoring Perjalanan Dinas sedang dikembangkan.</p>
+                <button onclick="logout()" class="btn-outline">LOGOUT</button>
+            </div>
+        </div>
+    `;
+    }
+
+    function logout() {
+        localStorage.clear();
+        location.reload();
+    }
+</script>
