@@ -2924,23 +2924,34 @@
         let allEmployees = [];
 
         document.addEventListener('DOMContentLoaded', function () {
+            // Check for persistent login
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                console.log('Restoring session for:', savedUser);
+                loginUser(savedUser);
+            }
+
             loadEmployees();
 
             const loginBtn = document.getElementById('btn-login');
             const demoBtn = document.getElementById('btn-demo');
 
-            loginBtn.addEventListener('click', function () {
-                const selectedEmployee = $('#employee-select').val();
-                if (!selectedEmployee) {
-                    alert('Silakan pilih nama pegawai terlebih dahulu.');
-                    return;
-                }
-                loginUser(selectedEmployee);
-            });
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function () {
+                    const selectedEmployee = $('#employee-select').val();
+                    if (!selectedEmployee) {
+                        alert('Silakan pilih nama pegawai terlebih dahulu.');
+                        return;
+                    }
+                    loginUser(selectedEmployee);
+                });
+            }
 
-            demoBtn.addEventListener('click', function () {
-                loginUser('RINDY');
-            });
+            if (demoBtn) {
+                demoBtn.addEventListener('click', function () {
+                    loginUser('RINDY');
+                });
+            }
 
             // Dark mode button event listeners
             const darkModeBtn = document.getElementById('btn-dark-mode');

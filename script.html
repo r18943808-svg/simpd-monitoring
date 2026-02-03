@@ -1,21 +1,30 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Check for persistent login
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+            console.log('Restoring session for:', savedUser);
+            loginUser(savedUser);
+        }
+
         loadEmployees();
 
         const loginBtn = document.getElementById('btn-login');
         const employeeSelect = document.getElementById('employee-select');
 
-        loginBtn.addEventListener('click', function () {
-            const selectedEmployee = employeeSelect.value;
-            if (!selectedEmployee) {
-                alert('Silakan pilih nama pegawai terlebih dahulu.');
-                return;
-            }
+        if (loginBtn) {
+            loginBtn.addEventListener('click', function () {
+                const selectedEmployee = employeeSelect.value;
+                if (!selectedEmployee) {
+                    alert('Silakan pilih nama pegawai terlebih dahulu.');
+                    return;
+                }
 
-            // Handle login logic
-            console.log('Logging in as:', selectedEmployee);
-            loginUser(selectedEmployee);
-        });
+                // Handle login logic
+                console.log('Logging in as:', selectedEmployee);
+                loginUser(selectedEmployee);
+            });
+        }
     });
 
     /**
