@@ -91,12 +91,15 @@
         }
 
         .kpu-logo {
-            width: 120px;
-            height: 120px;
-            background: #000;
-            padding: 15px;
+            width: 140px;
+            height: 140px;
+            background: transparent;
+            padding: 0;
             margin: 0 auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .kpu-logo img {
@@ -2200,8 +2203,7 @@
         <div class="container">
             <div class="logo-container">
                 <div class="kpu-logo">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/KPU_Logo.svg/1200px-KPU_Logo.svg.png"
-                        alt="KPU Logo">
+                    <img src="kpu-logo.png" alt="KPU Logo">
                 </div>
             </div>
 
@@ -2307,37 +2309,25 @@
                         <span class="status-card-label">Lengkap</span>
                         <div class="status-card-icon success">✓</div>
                     </div>
-                    <div class="status-card-value" id="count-lengkap">12</div>
-                    <div class="status-card-sub">+2 Minggu ini</div>
+                    <div class="status-card-value" id="count-lengkap">...</div>
+                    <div class="status-card-sub">Total Laporan</div>
                 </div>
                 <div class="status-card">
                     <div class="status-card-header">
                         <span class="status-card-label">Belum Lengkap</span>
                         <div class="status-card-icon warning">●</div>
                     </div>
-                    <div class="status-card-value" id="count-belum">3</div>
-                    <div class="status-card-sub muted">Segera lengkapi</div>
+                    <div class="status-card-value" id="count-belum">...</div>
+                    <div class="status-card-sub muted">Perlu Tindakan</div>
                 </div>
             </div>
 
             <!-- Reports List -->
             <h3 class="section-title">Laporan Terbaru</h3>
             <div class="reports-list" id="reports-list">
-                <div class="report-item">
-                    <div class="report-icon teal">✈</div>
-                    <div class="report-details">
-                        <div class="report-title">Kunjungan Kerja Jakarta</div>
-                        <div class="report-date">12 - 15 Okt 2023</div>
-                    </div>
-                    <span class="report-status complete">LENGKAP</span>
-                </div>
-                <div class="report-item">
-                    <div class="report-icon blue">🖥</div>
-                    <div class="report-details">
-                        <div class="report-title">Monitoring Dapil II</div>
-                        <div class="report-date">20 Okt 2023</div>
-                    </div>
-                    <span class="report-status incomplete">BELUM LENGKAP</span>
+                <div class="monitoring-loading" style="padding: 2rem 0;">
+                    <div class="spinner"></div>
+                    <p style="font-size: 0.8rem; margin-top: 1rem;">Memuat data laporan...</p>
                 </div>
             </div>
         </div>
@@ -2886,6 +2876,15 @@
         const API_URL = 'https://script.google.com/macros/s/AKfycby8kLZ3CSK-NOEK5xc0mLjd7Ce8GOeYa3nihwTDJnRiFbJvpuuBHjt_jARSXQ15dKVLuw/exec';
 
         // ========== HELPER FUNCTION ==========
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
         async function callAPI(action, params = {}) {
             const url = new URL(API_URL);
             url.searchParams.append('action', action);
@@ -2914,8 +2913,15 @@
                 return data;
             } catch (error) {
                 console.error('API Error:', error);
-                // Show error to user for debugging
-                alert('Error memanggil API: ' + error.message + '\n\nPastikan:\n1. Code.gs sudah di-update di Apps Script\n2. Sudah deploy ulang sebagai "New Version"\n3. Access = "Anyone"');
+
+                // Suppress "Failed to fetch" alert which happens on page unload/refresh
+                if (error.message && error.message.includes('Failed to fetch')) {
+                    console.warn('Fetch aborted or failed potentially due to page navigation.');
+                    return null;
+                }
+
+                // Only show alert for other types of errors if needed, or suppress entirely for better UX
+                // alert('Error memanggil API: ' + error.message);
                 throw error;
             }
         }
@@ -2987,6 +2993,50 @@
                     });
                 }
 
+                // Add Completion Modal HTML at the end of body
+                const modalHtml = `
+                <div id="completion-modal-overlay" class="month-picker-overlay">
+                    <div class="month-picker-modal" style="max-width: 400px;">
+                        <div class="month-picker-header">
+                            <div class="month-picker-title">Lengkapi Laporan</div>
+                        </div>
+                        <div style="padding: 1.5rem;">
+                            <p style="font-size: 0.9rem; margin-bottom: 1rem; color: #1a2a3a;">
+                                Silakan upload berkas yang kurang untuk laporan:
+                                <br><strong id="completion-report-title" style="color: #2ebcb3;">-</strong>
+                            </p>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Upload Berkas Tambahan</label>
+                                <div class="file-upload">
+                                    <input type="file" id="completion-files" class="file-input" multiple>
+                                    <div class="file-label">
+                                        <span class="file-choose">Pilih File</span>
+                                        <span class="file-name">Belum ada file dipilih</span>
+                                    </div>
+                                </div>
+                                <p style="font-size: 0.75rem; color: #8da2b5; margin-top: 0.5rem;">
+                                    *Anda dapat memilih multiple files sekaligus
+                                </p>
+                            </div>
+                        </div>
+                        <div class="month-picker-footer">
+                            <button class="month-picker-btn cancel" onclick="closeCompletionModal()">Batal</button>
+                            <button class="month-picker-btn confirm" onclick="submitCompletion()">Upload & Lengkapi</button>
+                        </div>
+                    </div>
+                </div>`;
+
+                if (!document.getElementById('completion-modal-overlay')) {
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                    // Add file input listener for the new modal
+                    document.getElementById('completion-files').addEventListener('change', function () {
+                        const count = this.files ? this.files.length : 0;
+                        this.nextElementSibling.querySelector('.file-name').textContent = count > 0 ? count + ' file dipilih' : 'Belum ada file dipilih';
+                    });
+                }
+
                 // Initialize Select2 with all employees as data source
                 $('#employee-select').select2({
                     placeholder: 'Cari & Pilih Nama...',
@@ -3007,6 +3057,222 @@
             } catch (error) {
                 console.error('Failed to load employees:', error);
                 select.innerHTML = '<option value="">Error memuat data</option>';
+            }
+        }
+
+        // GLOBAL VARIABLES FOR COMPLETION
+        let currentCompletionReport = null;
+        // Defined expected file types
+        const REQUIRED_DOCS = [
+            { id: 'SPT', label: 'Surat Perintah Tugas (SPT)' },
+            { id: 'SPPD', label: 'SPPD (Lembar I & II)' },
+            { id: 'KUITANSI', label: 'Kuitansi & Rincian Riil' },
+            { id: 'BOARDING_PASS', label: 'Tiket / Boarding Pass' },
+            { id: 'LAPORAN', label: 'Laporan Pelaksanaan' },
+            { id: 'UNDANGAN', label: 'Undangan / Materi' }
+        ];
+
+        async function openCompletionModal(reportId) {
+            try {
+                // Find report data
+                // Use attribute selector carefully
+                const btn = document.querySelector(`button[data-report-id="${reportId}"]`);
+                if (!btn) {
+                    console.error('Report button not found for ID:', reportId);
+                    return;
+                }
+
+                const reportData = JSON.parse(btn.dataset.report);
+                currentCompletionReport = reportData;
+
+                // Setup Modal UI
+                const titleEl = document.getElementById('completion-report-title');
+                if (titleEl) titleEl.textContent = reportData.keperluan;
+
+                const overlay = document.getElementById('completion-modal-overlay');
+                if (overlay) overlay.classList.add('active');
+
+                // Show Loading State in Modal Content
+                const contentDiv = document.querySelector('#completion-modal-overlay .month-picker-modal > div:nth-child(2)');
+                if (!contentDiv) {
+                    console.error('Modal body not found');
+                    return;
+                }
+
+                // Temporary Loading UI
+                contentDiv.innerHTML = `
+                    <div style="padding: 2rem; text-align: center;">
+                        <div class="spinner" style="margin: 0 auto 1rem auto;"></div>
+                        <p>Memeriksa kelengkapan berkas...</p>
+                    </div>
+                 `;
+
+                try {
+                    // Fetch current files
+                    const userName = localStorage.getItem('currentUser');
+                    const result = await callAPI('getReportFileDetails', {
+                        spreadsheetName: reportData.source,
+                        employeeName: userName,
+                        tglBerangkat: reportData.tglBerangkat
+                    });
+
+                    // Process Files - HANDLE NULL/ERROR RESULT SAFELY
+                    let existingFiles = [];
+                    if (result && result.success !== false && result.files) {
+                        existingFiles = result.files;
+                    } else if (result && result.error) {
+                        throw new Error(result.error);
+                    }
+
+                    // Generate Form HTML
+                    let formHtml = `
+                        <p style="font-size: 0.9rem; margin-bottom: 1rem; color: #1a2a3a;">
+                            Silakan upload berkas yang kurang untuk laporan:
+                            <br><strong style="color: #2ebcb3;">${reportData.keperluan}</strong>
+                        </p>
+                        <div class="completion-list" style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
+                    `;
+
+                    REQUIRED_DOCS.forEach(doc => {
+                        // Check if file exists (fuzzy match name)
+                        const foundFile = existingFiles.find(f =>
+                            f.name.toUpperCase().includes(doc.id) ||
+                            f.name.toUpperCase().includes(doc.label.split(' ')[0].toUpperCase())
+                        );
+
+                        if (foundFile) {
+                            // Already uploaded
+                            formHtml += `
+                                <div class="doc-item complete" style="display: flex; align-items: center; margin-bottom: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; border: 1px solid #bce3ff;">
+                                    <div style="width: 24px; height: 24px; background: #3498db; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; flex-shrink: 0;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; font-size: 0.85rem; color: #2c3e50;">${doc.label}</div>
+                                        <div style="font-size: 0.75rem; color: #3498db; word-break: break-all;">${foundFile.name}</div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // Missing - Show Upload Input
+                            formHtml += `
+                                <div class="doc-item missing" style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff4e5; border-radius: 6px; border: 1px solid #ffeebb;">
+                                    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                                        <div style="width: 24px; height: 24px; background: #fff; border: 2px solid #f39c12; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; flex-shrink: 0;">
+                                            <span style="color: #f39c12; font-weight: bold; font-size: 12px;">!</span>
+                                        </div>
+                                        <div style="font-weight: 600; font-size: 0.85rem; color: #d35400;">${doc.label} (Belum Ada)</div>
+                                    </div>
+                                    <input type="file" id="file-${doc.id}" class="doc-input" data-type="${doc.id}" style="font-size: 0.8rem; width: 100%;">
+                                </div>
+                            `;
+                        }
+                    });
+
+                    formHtml += `</div>
+                        <div style="margin-top: 1rem; font-size: 0.75rem; color: #7f8c8d;">
+                            *Pastikan semua berkas terupload agar status menjadi LENGKAP.
+                        </div>
+                    `;
+
+                    contentDiv.innerHTML = formHtml;
+
+                } catch (e) {
+                    console.error('Error fetching file details:', e);
+                    contentDiv.innerHTML = `
+                        <div style="padding: 1rem; color: red; text-align: center;">
+                            <p><strong>Gagal memuat detail berkas</strong></p>
+                            <p style="font-size: 0.8rem; margin: 0.5rem 0;">${e.message || 'Terjadi kesalahan pada server.'}</p>
+                            <p style="font-size: 0.8rem; color: #555;">Pastikan koneksi internet lancar dan script backend tidak error.</p>
+                            <button onclick="closeCompletionModal()" style="margin-top:1rem; padding: 6px 12px; cursor: pointer;">Tutup</button>
+                        </div>
+                     `;
+                }
+            } catch (outerError) {
+                console.error('Critical error in openCompletionModal:', outerError);
+                alert('Terjadi kesalahan sistem: ' + outerError.message);
+            }
+        }
+
+        function closeCompletionModal() {
+            document.getElementById('completion-modal-overlay').classList.remove('active');
+            currentCompletionReport = null;
+        }
+
+        async function submitCompletion() {
+            if (!currentCompletionReport) return;
+
+            // Collect all inputs
+            const inputs = document.querySelectorAll('.doc-input');
+            const filesToUpload = [];
+
+            for (let input of inputs) {
+                if (input.files.length > 0) {
+                    filesToUpload.push({
+                        file: input.files[0],
+                        type: input.dataset.type
+                    });
+                }
+            }
+
+            if (filesToUpload.length === 0) {
+                alert('Pilih minimal satu berkas untuk diupload!');
+                return;
+            }
+
+            const btn = document.querySelector('#completion-modal-overlay .confirm');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Mengupload...';
+
+            try {
+                const payloadFiles = [];
+                for (let item of filesToUpload) {
+                    const base64 = await fileToBase64(item.file);
+                    if (base64) {
+                        payloadFiles.push({
+                            data: base64,
+                            name: item.file.name, // The backend will rename specific types if configured but we send raw name
+                            docType: item.type // Send type hint
+                        });
+                    }
+                }
+
+                const userName = localStorage.getItem('currentUser');
+
+                const payload = {
+                    spreadsheetName: currentCompletionReport.source,
+                    employeeName: userName,
+                    tglBerangkat: currentCompletionReport.tglBerangkat,
+                    files: payloadFiles
+                };
+
+                console.log('Completing report:', payload);
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'completeReport',
+                        payload: payload
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('✅ ' + result.message + '\nStatus baru: ' + (result.newStatus || 'Updated'));
+                    closeCompletionModal();
+                    refreshData();
+                } else {
+                    alert('❌ Gagal: ' + result.message);
+                }
+
+            } catch (error) {
+                console.error('Completion error:', error);
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         }
 
@@ -3069,20 +3335,38 @@
                 return;
             }
 
-            container.innerHTML = reports.map(report => `
+            container.innerHTML = reports.map(report => {
+                const isComplete = report.status === 'Lengkap';
+                // Escape attributes for JSON safety
+                const reportDataRaw = JSON.stringify(report).replace(/"/g, '&quot;');
+
+                let actionHtml = '';
+                if (!isComplete) {
+                    actionHtml = `
+                    <button class="btn-complete" onclick="openCompletionModal('${report.id}')" data-report-id="${report.id}" data-report="${reportDataRaw}" style="margin-top: 5px; padding: 4px 10px; font-size: 0.70rem; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        LENGKAPI BERKAS
+                    </button>
+                   `;
+                }
+
+                return `
                 <div class="report-item">
-                    <div class="report-icon ${report.status === 'Lengkap' ? 'teal' : 'blue'}">
-                        ${report.status === 'Lengkap' ? '✈' : '🖥'}
+                    <div class="report-icon ${isComplete ? 'teal' : 'blue'}">
+                        ${isComplete ? '✈' : '🖥'}
                     </div>
                     <div class="report-details">
                         <div class="report-title">${report.keperluan}</div>
                         <div class="report-date">${report.tglBerangkat} - ${report.tglKembali}</div>
                     </div>
-                    <span class="report-status ${report.status === 'Lengkap' ? 'complete' : 'incomplete'}">
-                        ${report.status.toUpperCase()}
-                    </span>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                        <span class="report-status ${isComplete ? 'complete' : 'incomplete'}">
+                            ${report.status.toUpperCase()}
+                        </span>
+                        ${actionHtml}
+                    </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         async function refreshData() {

@@ -60,6 +60,9 @@ function doGet(e) {
       case 'getAllData':
         result = getAllData();
         break;
+      case 'getReportFileDetails':
+        result = getReportFileDetails(e.parameter.spreadsheetName, e.parameter.employeeName, e.parameter.tglBerangkat);
+        break;
       default:
         result = { 
           error: 'Unknown action', 
@@ -90,6 +93,9 @@ function doPost(e) {
         break;
       case 'submitData':
         result = submitData(data.payload);
+        break;
+      case 'completeReport':
+        result = completeReport(data.payload);
         break;
       default:
         result = { error: 'Unknown action' };
@@ -443,7 +449,17 @@ function getReportStats(name) {
         if (sheet) {
           const lastRow = sheet.getLastRow();
           if (lastRow > 1) {
-            lengkap += lastRow - 1; // Subtract header row
+            const data = sheet.getDataRange().getValues();
+            // Iterate from row 1 (skipping header row 0)
+            for (let i = 1; i < data.length; i++) {
+               // Column 16 (index 15) is STATUS
+               const status = data[i][15];
+               if (status === 'Lengkap') {
+                 lengkap++;
+               } else {
+                 belumLengkap++;
+               }
+            }
           }
         }
       } catch (err) {
@@ -490,7 +506,8 @@ function getRecentReports(name, limit) {
               keperluan: data[i][5] || '-', // MAKSUD PERJALANAN
               tglBerangkat: formatDateShort(data[i][10]),
               tglKembali: formatDateShort(data[i][11]),
-              status: 'Lengkap',
+              status: data[i][15] || 'Belum Lengkap',
+              folderUrl: data[i][16] || '',
               source: file.getName()
             });
           }
@@ -659,6 +676,75 @@ function uploadFile(folder, fileData, fileName) {
 }
 
 /**
+ * Get details of files currently in the report folder
+ */
+function getReportFileDetails(spreadsheetName, employeeName, tglBerangkat) {
+  try {
+    // 1. Find Folder
+    // Use the logic to find the specific employee folder
+    const tgl = new Date(tglBerangkat);
+    const bulan = BULAN_INDONESIA[tgl.getMonth()];
+    const tahun = tgl.getFullYear();
+    
+    // Check if month folder exists
+    const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+    const monthFolders = folder.getFoldersByName(bulan + ' - ' + tahun);
+    
+    if (!monthFolders.hasNext()) {
+       return { 
+         exists: false, 
+         files: [], 
+         fileCount: 0, 
+         status: 'Folder Bulan tidak ditemukan' 
+       };
+    }
+    
+    const monthFolder = monthFolders.next();
+    
+    // Check employee folder
+    const day = String(tgl.getDate()).padStart(2, '0');
+    const month = String(tgl.getMonth() + 1).padStart(2, '0');
+    const year = tgl.getFullYear();
+    const folderName = day + '-' + month + '-' + year + ' - ' + employeeName;
+    
+    const empFolders = monthFolder.getFoldersByName(folderName);
+    
+    if (!empFolders.hasNext()) {
+      return { 
+         exists: false, 
+         files: [], 
+         fileCount: 0, 
+         status: 'Folder Laporan tidak ditemukan'
+       };
+    }
+    
+    const empFolder = empFolders.next();
+    const files = [];
+    const fileIter = empFolder.getFiles();
+    
+    while (fileIter.hasNext()) {
+      const f = fileIter.next();
+      files.push({
+        name: f.getName(),
+        id: f.getId(),
+        url: f.getUrl(),
+        type: f.getMimeType()
+      });
+    }
+    
+    return {
+      exists: true,
+      files: files,
+      fileCount: files.length,
+      folderUrl: empFolder.getUrl()
+    };
+    
+  } catch (e) {
+    return { error: e.toString() };
+  }
+}
+
+/**
  * Upload multiple files for a monitoring submission
  * Payload should include: tglBerangkat, nama, files (array of {data, name, type})
  */
@@ -790,6 +876,133 @@ function submitMonitoringWithFiles(payload) {
     
   } catch (e) {
     Logger.log('submitMonitoringWithFiles error: ' + e);
+    return { success: false, message: e.toString() };
+  }
+}
+/**
+ * Complete a report by uploading additional files
+ */
+function completeReport(payload) {
+  try {
+    // Payload: { spreadsheetName, employeeName, tglBerangkat, files }
+    
+    // 1. Open Spreadsheet
+    const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+    const filesIter = folder.getFilesByName(payload.spreadsheetName);
+    
+    if (!filesIter.hasNext()) {
+      return { success: false, message: 'Spreadsheet tidak ditemukan: ' + payload.spreadsheetName };
+    }
+    
+    const ss = SpreadsheetApp.openById(filesIter.next().getId());
+    
+    // 2. Find Folder for Uploads
+    // We try to find the folder based on naming convention
+    const tglBerangkat = new Date(payload.tglBerangkat);
+    const bulan = BULAN_INDONESIA[tglBerangkat.getMonth()];
+    const tahun = tglBerangkat.getFullYear();
+    
+    const monthYearFolder = getOrCreateUploadFolder(bulan, tahun);
+    const employeeFolder = getOrCreateEmployeeFolder(monthYearFolder, payload.tglBerangkat, payload.employeeName);
+    
+    // 3. Upload New Files
+    const files = payload.files || [];
+    let newUploadCount = 0;
+    
+    for (const file of files) {
+      if (file && file.data && file.name) {
+        // If file object has a 'type' property (e.g. 'SPT', 'SPPD'), prepend it to filename
+        // This makes it easier to track which file is which
+        let fileName = file.name;
+        if (file.docType && !fileName.startsWith(file.docType)) {
+             fileName = file.docType + '_' + fileName;
+        }
+        
+        const result = uploadFile(employeeFolder, file.data, fileName);
+        if (result.success) {
+          newUploadCount++;
+        }
+      }
+    }
+    
+    // 4. Check Total File Count in Folder
+    const fileIter = employeeFolder.getFiles();
+    let totalFiles = 0;
+    while (fileIter.hasNext()) {
+      fileIter.next();
+      totalFiles++;
+    }
+    
+    // 5. Update Status
+    // Rule: At least 6 files required
+    const expectedFileCount = 6;
+    let newStatus = totalFiles >= expectedFileCount ? 'Lengkap' : 'Belum Lengkap';
+    
+    // Update in Monitoring Sheet (Main)
+    const monitoringSheet = ss.getSheetByName('Monitoring');
+    if (monitoringSheet) {
+      const data = monitoringSheet.getDataRange().getValues();
+      // Logger.log('Searching for row to update. Name: ' + payload.employeeName + ', Date: ' + formatDateShort(tglBerangkat));
+      
+      for (let i = 1; i < data.length; i++) {
+        const rowName = data[i][1];
+        const rowDate = data[i][10]; // Tgl Berangkat
+        
+        // Robust Date Matching
+        let dateMatch = false;
+        const targetDateStr = formatDateShort(tglBerangkat);
+        
+        if (rowDate instanceof Date) {
+          dateMatch = formatDateShort(rowDate) === targetDateStr;
+        } else {
+          // If string, try to match directly or parse
+          dateMatch = rowDate.toString().includes(targetDateStr) || rowDate == payload.tglBerangkat;
+        }
+        
+        if (rowName === payload.employeeName && dateMatch) {
+          // Update Status (Col 16)
+          monitoringSheet.getRange(i + 1, 16).setValue(newStatus);
+          // Logger.log('Updated Main Sheet Row ' + (i+1));
+          break;
+        }
+      }
+    }
+    
+    // Update in Employee Sheet
+    const employeeSheet = ss.getSheetByName(payload.employeeName);
+    if (employeeSheet) {
+      const data = employeeSheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        const rowDate = data[i][10];
+        
+        let dateMatch = false;
+        const targetDateStr = formatDateShort(tglBerangkat);
+        
+        if (rowDate instanceof Date) {
+          dateMatch = formatDateShort(rowDate) === targetDateStr;
+        } else {
+           dateMatch = rowDate.toString().includes(targetDateStr) || rowDate == payload.tglBerangkat;
+        }
+        
+        if (dateMatch) {
+           // Update Status (Col 16)
+           employeeSheet.getRange(i + 1, 16).setValue(newStatus);
+           // Logger.log('Updated Employee Sheet Row ' + (i+1));
+           break;
+        }
+      }
+    }
+    
+    return {
+      success: true,
+      message: 'Berkas berhasil ditambahkan',
+      newStatus: newStatus,
+      totalFiles: totalFiles,
+      uploadedCount: newUploadCount
+    };
+    
+  } catch (e) {
+    Logger.log('completeReport error: ' + e);
     return { success: false, message: e.toString() };
   }
 }
