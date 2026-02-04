@@ -2873,7 +2873,7 @@
     <script>
         // ========== KONFIGURASI API ==========
         // URL deploy Apps Script terbaru
-        const API_URL = 'https://script.google.com/macros/s/AKfycby8kLZ3CSK-NOEK5xc0mLjd7Ce8GOeYa3nihwTDJnRiFbJvpuuBHjt_jARSXQ15dKVLuw/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzZaxymwPN5DjhK_l6Ya_QuE1wNP65hG3WZdzDRftc0ABy0cXGBeNvvF-xhhqDew25xkA/exec';
 
         // ========== HELPER FUNCTION ==========
         function fileToBase64(file) {
@@ -3215,9 +3215,21 @@
                 }
             }
 
+            // If no NEW files selected, but existing files detected, just update status
             if (filesToUpload.length === 0) {
-                alert('Pilih minimal satu berkas untuk diupload!');
-                return;
+                // Check if we have existing files detected (complete items visible)
+                const existingFiles = document.querySelectorAll('.doc-item.complete');
+                console.log('Existing files found:', existingFiles.length);
+
+                if (existingFiles.length >= 6) {
+                    // All files already exist - just force status update
+                    await forceStatusUpdate();
+                    return;
+                } else {
+                    // Not all files exist yet
+                    alert('Pilih minimal satu berkas untuk diupload! (' + existingFiles.length + ' dari 6 file sudah ada)');
+                    return;
+                }
             }
 
             const btn = document.querySelector('#completion-modal-overlay .confirm');
@@ -3226,45 +3238,117 @@
             btn.textContent = 'Mengupload...';
 
             try {
-                const payloadFiles = [];
-                for (let item of filesToUpload) {
-                    const base64 = await fileToBase64(item.file);
-                    if (base64) {
-                        payloadFiles.push({
-                            data: base64,
-                            name: item.file.name, // The backend will rename specific types if configured but we send raw name
-                            docType: item.type // Send type hint
-                        });
-                    }
-                }
-
                 const userName = localStorage.getItem('currentUser');
 
-                const payload = {
-                    spreadsheetName: currentCompletionReport.source,
+                // STEP 1: Get Folder ID
+                btn.textContent = 'Menyiapkan...';
+
+                const metaPayload = {
+                    sheetName: currentCompletionReport.source,
                     employeeName: userName,
-                    tglBerangkat: currentCompletionReport.tglBerangkat,
-                    files: payloadFiles
+                    tglBerangkat: currentCompletionReport.tglBerangkat
                 };
 
-                console.log('Completing report:', payload);
-
-                const response = await fetch(API_URL, {
+                const checkResp = await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify({
-                        action: 'completeReport',
-                        payload: payload
+                        action: 'checkReportFolder',
+                        payload: metaPayload
                     })
                 });
 
-                const result = await response.json();
+                const checkResult = await checkResp.json();
 
-                if (result.success) {
-                    alert('✅ ' + result.message + '\nStatus baru: ' + (result.newStatus || 'Updated'));
-                    closeCompletionModal();
+                if (!checkResult.success || !checkResult.folderId) {
+                    throw new Error(checkResult.message || 'Gagal menemukan folder laporan');
+                }
+
+                const folderId = checkResult.folderId;
+
+                // STEP 2: Upload Files Sequentially
+                let successCount = 0;
+                const failedFiles = [];
+
+                for (let i = 0; i < filesToUpload.length; i++) {
+                    const item = filesToUpload[i];
+                    const displayIndex = i + 1;
+                    btn.textContent = `Upload ${displayIndex}/${filesToUpload.length}...`;
+
+                    try {
+                        const base64 = await fileToBase64(item.file);
+                        if (base64) {
+                            const uploadResp = await fetch(API_URL, {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    action: 'uploadSingleFile',
+                                    payload: {
+                                        folderId: folderId,
+                                        // Pass proper filename with prefix like "SPT_filename.pdf"
+                                        fileData: base64,
+                                        fileName: (item.type ? item.type + '_' : '') + item.file.name
+                                    }
+                                })
+                            });
+                            const uploadResult = await uploadResp.json();
+
+                            if (uploadResult.success) {
+                                successCount++;
+                            } else {
+                                failedFiles.push({ name: item.file.name, error: uploadResult.message });
+                            }
+                        }
+                    } catch (err) {
+                        console.error('File upload error:', err);
+                        failedFiles.push({ name: item.file.name, error: err.message });
+                    }
+                }
+
+                // STEP 3: Update Status
+                btn.textContent = 'Finalisasi...';
+
+                const finalResp = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'updateReportStatus',
+                        payload: {
+                            spreadsheetName: currentCompletionReport.source,
+                            employeeName: userName,
+                            tglBerangkat: currentCompletionReport.tglBerangkat,
+                            folderId: folderId // Pass ID directly
+                        }
+                    })
+                });
+
+                const finalResult = await finalResp.json();
+                const newStatus = finalResult.status || 'Updated';
+
+                // Final Report
+                let msg = '✅ Proses Selesai!\nStatus: ' + newStatus + '\nFile sukses: ' + successCount + '/' + filesToUpload.length;
+
+                // Show sheet update status
+                if (finalResult.sheetUpdateStatus) {
+                    msg += '\nSheet Update: ' + finalResult.sheetUpdateStatus;
+                }
+
+                if (newStatus === 'Belum Lengkap' && finalResult.missingTypes && finalResult.missingTypes.length > 0) {
+                    msg += '\n\n⚠️ Status BELUM LENGKAP karena kurang berkas:\n';
+                    finalResult.missingTypes.forEach(t => msg += '- ' + t + '\n');
+                }
+
+                // Always show totalFiles for debug
+                msg += '\nTotal file di folder: ' + (finalResult.totalFiles || 0);
+
+                if (failedFiles.length > 0) {
+                    msg += '\n\n❌ GAGAL UPLOAD (' + failedFiles.length + '):\n';
+                    failedFiles.forEach(f => msg += '- ' + f.name + '\n');
+                    msg += '\nSilakan coba lagi untuk file yang gagal.';
+                    alert(msg);
+                    // Keep modal open
                     refreshData();
                 } else {
-                    alert('❌ Gagal: ' + result.message);
+                    alert(msg);
+                    closeCompletionModal();
+                    refreshData();
                 }
 
             } catch (error) {
@@ -3273,6 +3357,87 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
+            }
+        }
+
+        // Force status update without uploading new files
+        async function forceStatusUpdate() {
+            if (!currentCompletionReport) return;
+
+            const btn = document.querySelector('#completion-modal-overlay .confirm');
+            const originalText = btn ? btn.textContent : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Memperbarui status...';
+            }
+
+            try {
+                const userName = localStorage.getItem('currentUser');
+
+                // First get the folder ID
+                const metaPayload = {
+                    sheetName: currentCompletionReport.source,
+                    employeeName: userName,
+                    tglBerangkat: currentCompletionReport.tglBerangkat
+                };
+
+                const checkResp = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'checkReportFolder',
+                        payload: metaPayload
+                    })
+                });
+
+                const checkResult = await checkResp.json();
+                const folderId = checkResult.folderId || '';
+
+                // Now call updateReportStatus directly
+                const finalResp = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'updateReportStatus',
+                        payload: {
+                            spreadsheetName: currentCompletionReport.source,
+                            employeeName: userName,
+                            tglBerangkat: currentCompletionReport.tglBerangkat,
+                            folderId: folderId
+                        }
+                    })
+                });
+
+                const finalResult = await finalResp.json();
+                const newStatus = finalResult.status || 'Updated';
+
+                let msg = '✅ Status Diperbarui!\nStatus: ' + newStatus;
+
+                if (finalResult.sheetUpdateStatus) {
+                    msg += '\nSheet Update: ' + finalResult.sheetUpdateStatus;
+                }
+
+                msg += '\nTotal file di folder: ' + (finalResult.totalFiles || 0);
+
+                if (newStatus === 'Lengkap') {
+                    msg += '\n\n🎉 Laporan Anda sekarang LENGKAP!';
+                } else {
+                    msg += '\n\n⚠️ Status masih BELUM LENGKAP';
+                    if (finalResult.missingTypes && finalResult.missingTypes.length > 0) {
+                        msg += '\nKurang: ' + finalResult.missingTypes.join(', ');
+                    }
+                }
+
+                alert(msg);
+                closeCompletionModal();
+                refreshData();
+
+            } catch (error) {
+                console.error('Force update error:', error);
+                alert('Error: ' + error.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
             }
         }
 
@@ -3565,74 +3730,142 @@
                 }
 
                 // Collect files (optional)
-                btn.innerHTML = '<span class="spin">⏳</span> Mengupload file...';
-
                 const fileInputs = [
                     { id: 'file-spt', name: 'SPT' },
                     { id: 'file-sppd', name: 'SPPD' },
-                    { id: 'file-kuitansi', name: 'KUITANSI' },
-                    { id: 'file-boarding', name: 'BOARDING_PASS' },
+                    { id: 'file-hotel', name: 'KUITANSI' }, // Matches HTML id="file-hotel"
+                    { id: 'file-tiket', name: 'BOARDING_PASS' }, // Matches HTML id="file-tiket"
                     { id: 'file-laporan', name: 'LAPORAN' },
                     { id: 'file-undangan', name: 'UNDANGAN' }
                 ];
 
+                const filesToUpload = [];
                 for (const fileInput of fileInputs) {
                     const input = document.getElementById(fileInput.id);
                     if (input && input.files && input.files[0]) {
-                        const file = input.files[0];
-                        const base64 = await fileToBase64(file);
-                        if (base64) {
-                            formData.files.push({
-                                data: base64,
-                                name: fileInput.name + '_' + file.name,
-                                type: fileInput.name
-                            });
-                        }
+                        filesToUpload.push({
+                            file: input.files[0],
+                            name: fileInput.name,
+                            id: fileInput.id
+                        });
                     }
                 }
 
-                console.log('Sending form data with ' + formData.files.length + ' files');
+                // STEP 1: Submit Data First (Get Folder ID)
+                btn.innerHTML = '<span class="spin">⏳</span> Mengirim Data...';
+                console.log('Sending monitoring data...');
 
-                // Send to monitoring API with files
-                const response = await fetch(API_URL, {
+                const responseData = await fetch(API_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain'
-                    },
                     body: JSON.stringify({
-                        action: 'submitMonitoringWithFiles',
-                        payload: formData
-                    }),
-                    redirect: 'follow'
+                        action: 'submitMonitoring',
+                        payload: formData // Note: formData still has empty files array, which is fine
+                    })
                 });
 
-                const result = await response.json();
-                console.log('API response:', result);
+                const resultData = await responseData.json();
 
-                if (result.success) {
-                    const statusMsg = result.status === 'Lengkap'
-                        ? '✅ Status: LENGKAP'
-                        : '⚠️ Status: BELUM LENGKAP (ada berkas yang belum diupload)';
-
-                    alert('✅ ' + result.message + '\n\nSheet: ' + result.spreadsheetName + '\n' + statusMsg + '\n\nFile terupload: ' + result.uploadedCount);
-
-                    // Clear form (except readonly fields)
-                    document.querySelectorAll('.form-input').forEach(input => {
-                        if (!input.readOnly) input.value = '';
-                    });
-
-                    // Clear file inputs
-                    document.querySelectorAll('.file-input').forEach(input => {
-                        input.value = '';
-                        input.nextElementSibling.querySelector('.file-name').textContent = 'No file chosen';
-                    });
-
-                    // Switch back to beranda and refresh
-                    switchTab('beranda');
-                    refreshData();
-                } else {
-                    alert('❌ Gagal mengirim: ' + (result.message || result.error));
+                if (!resultData.success) {
+                    throw new Error(resultData.message || 'Gagal menyimpan data monitoring');
                 }
+
+                const folderId = resultData.folderId;
+                if (!folderId) {
+                    throw new Error('Folder ID tidak diterima dari server');
+                }
+
+                // STEP 2: Upload Files Sequentially
+                if (filesToUpload.length > 0) {
+                    let successCount = 0;
+                    const failedFiles = [];
+
+                    for (let i = 0; i < filesToUpload.length; i++) {
+                        const item = filesToUpload[i];
+                        // Update button progress
+                        btn.innerHTML = `<span class="spin">⏳</span> Upload file ${i + 1}/${filesToUpload.length}...`;
+
+                        try {
+                            const base64 = await fileToBase64(item.file);
+                            if (base64) {
+                                // Send single file upload request
+                                const uploadResp = await fetch(API_URL, {
+                                    method: 'POST',
+                                    body: JSON.stringify({
+                                        action: 'uploadSingleFile',
+                                        payload: {
+                                            folderId: folderId,
+                                            fileData: base64,
+                                            fileName: item.name + '_' + item.file.name
+                                        }
+                                    })
+                                });
+                                const uploadResult = await uploadResp.json();
+
+                                if (uploadResult.success) {
+                                    successCount++;
+                                } else {
+                                    failedFiles.push({ name: item.file.name, error: uploadResult.message });
+                                }
+                            }
+                        } catch (err) {
+                            console.error('File upload error:', err);
+                            failedFiles.push({ name: item.file.name, error: err.message });
+                        }
+                    }
+
+                    // STEP 3: Update Status in Sheet
+                    btn.innerHTML = '<span class="spin">⏳</span> Memperbarui status...';
+
+                    const updateResp = await fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'updateReportStatus',
+                            payload: {
+                                spreadsheetName: resultData.spreadsheetName,
+                                employeeName: formData.nama,
+                                tglBerangkat: formData.tglBerangkat,
+                                folderId: folderId
+                            }
+                        })
+                    });
+
+                    const updateResult = await updateResp.json();
+                    const actualStatus = updateResult.status || 'Belum Lengkap';
+
+                    // Final Report
+                    const statusMsg = actualStatus === 'Lengkap' ? '✅ Status: LENGKAP' : '⚠️ Status: BELUM LENGKAP';
+                    let mainMsg = '✅ Data tersimpan!\n\nFile terupload: ' + successCount + '/' + filesToUpload.length + '\n' + statusMsg;
+
+                    if (updateResult.sheetUpdateStatus) {
+                        mainMsg += '\nSheet: ' + updateResult.sheetUpdateStatus;
+                    }
+
+                    if (failedFiles.length > 0) {
+                        mainMsg += '\n\n❌ GAGAL UPLOAD (' + failedFiles.length + '):\n';
+                        failedFiles.forEach(f => mainMsg += '- ' + f.name + '\n');
+                        mainMsg += '\nSilakan gunakan menu "Lengkapi Berkas" untuk mengupload ulang file yang gagal.';
+                    }
+
+                    alert(mainMsg);
+
+                } else {
+                    alert('✅ Data berhasil disimpan (Tanpa lampiran file).\n\nStatus: Belum Lengkap\nGunakan menu "Lengkapi Berkas" untuk menambahkan file.');
+                }
+
+                // Clear form (except readonly fields)
+                document.querySelectorAll('.form-input').forEach(input => {
+                    if (!input.readOnly) input.value = '';
+                });
+
+                // Clear file inputs
+                document.querySelectorAll('.file-input').forEach(input => {
+                    input.value = '';
+                    input.nextElementSibling.querySelector('.file-name').textContent = 'No file chosen';
+                });
+
+                // Switch back to beranda and refresh
+                switchTab('beranda');
+                refreshData();
 
             } catch (error) {
                 console.error('Submit error:', error);
